@@ -1,27 +1,16 @@
 package main
 
 import (
-	"fmt"
+	"context"
+	"time"
 )
-
-//const HASHTAG = "#sboxbot"
-const HASHTAG = "#smallbox"
-
-func search() {
-	searchResult, err := api.GetSearch(HASHTAG, nil)
-	if err != nil {
-		panic(err)
-	}
-	for i, tweet := range searchResult.Statuses {
-		fmt.Printf("key:%d\tid:%d\tCreatedAt:%s\tUser:%s\n", i, tweet.Id, tweet.CreatedAt, tweet.User)
-		fmt.Println(tweet.Text)
-		//fmt.Println(tweet)
-	}
-}
 
 func main() {
 
-	api := GetTwitterApi()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	//api := GetTwitterApi()
+	t := newTwitter()
 	tick := time.NewTicker(time.Second * time.Duration(60)).C
 
 mainloop:
@@ -30,7 +19,7 @@ mainloop:
 		case <-ctx.Done():
 			break mainloop
 		case <-tick:
-			search()
+			t.search()
 		}
 	}
 	/*
