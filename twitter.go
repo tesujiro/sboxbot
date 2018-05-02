@@ -11,7 +11,7 @@ import (
 
 type Twitter struct {
 	api        *anaconda.TwitterApi
-	createdAt  time.Time
+	startedAt  time.Time
 	searchedId int64
 }
 
@@ -24,36 +24,36 @@ func GetTwitterApi() *anaconda.TwitterApi {
 
 func newTwitter() *Twitter {
 	return &Twitter{
-		api: GetTwitterApi(),
-		createdAttime.Now(),
+		api:       GetTwitterApi(),
+		startedAt: time.Now(),
 	}
 }
 
-//const HASHTAG = "#sboxbot"
-const HASHTAG = "#smallbox"
-
-func (t *Twitter) search() {
+func (t *Twitter) search(hashtag string) []anaconda.Tweet {
 	fmt.Printf("twitter.search %s\n", time.Now())
 	v := url.Values{}
 	if t.searchedId != 0 {
 		v.Add("since_id", fmt.Sprint(t.searchedId))
 	}
-	searchResult, err := t.api.GetSearch(HASHTAG, v)
+	searchResult, err := t.api.GetSearch(hashtag, v)
 	if err != nil {
 		panic(err)
 	}
-	for i, tweet := range searchResult.Statuses {
-		fmt.Printf("key:%d\tid:%d\tCreatedAt:%s\tUser:%s\n", i, tweet.Id, tweet.CreatedAt, nil)
-		//fmt.Println(tweet.Text)
-		//fmt.Println(tweet)
-		if t.searchedId < tweet.Id {
-			t.searchedId = tweet.Id
-		}
+	if len(searchResult.Statuses) > 0 {
+		t.searchedId = searchResult.Metadata.MaxId
 	}
+	return searchResult.Statuses
 }
 
 func (t *Twitter) post(s string, v url.Values) {
-	tweet, err := api.PostTweet(s, v)
+	_, err := t.api.PostTweet(s, v)
+	if err != nil {
+		panic(err)
+	}
+}
+
+func (t *Twitter) retweet(id int64, trimUser bool) {
+	_, err := t.api.Retweet(id, trimUser)
 	if err != nil {
 		panic(err)
 	}
