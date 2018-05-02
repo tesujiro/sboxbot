@@ -30,7 +30,6 @@ func newTwitter() *Twitter {
 }
 
 func (t *Twitter) search(hashtag string) []anaconda.Tweet {
-	fmt.Printf("twitter.search %s\n", time.Now())
 	v := url.Values{}
 	if t.searchedId != 0 {
 		v.Add("since_id", fmt.Sprint(t.searchedId))
