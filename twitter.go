@@ -51,3 +51,10 @@ func (t *Twitter) search() {
 		}
 	}
 }
+
+func (t *Twitter) post(s string, v url.Values) {
+	tweet, err := api.PostTweet(s, v)
+	if err != nil {
+		panic(err)
+	}
+}

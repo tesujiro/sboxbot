@@ -22,13 +22,4 @@ mainloop:
 			t.search()
 		}
 	}
-	/*
-		text := "Hello world"
-		tweet, err := api.PostTweet(text, nil)
-		if err != nil {
-			panic(err)
-		}
-	*/
-
-	//fmt.Print(tweet.Text)
 }
