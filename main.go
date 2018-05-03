@@ -3,6 +3,8 @@ package main
 import (
 	"context"
 	"fmt"
+	"net/url"
+	"strings"
 	"time"
 )
 
@@ -34,11 +36,18 @@ mainloop:
 				fmt.Println("=============================================")
 				fmt.Println(tweet.Text)
 				fmt.Println("=============================================")
+				fmt.Printf("%s\n", tweet)
+				fmt.Println("=============================================")
 				if tweet.RetweetCount == 0 {
-					fmt.Printf("==>retweet\n")
-					t.retweet(tweet.Id, true)
+					fmt.Printf("==>exec\n")
+					//t.retweet(tweet.Id, true)
+					cmd := strings.Replace(tweet.Text, hash, "", -1)
+					cmd = strings.TrimRight(cmd, "\n")
+					result := execOnContainer(ctx, cmd)
+					v := url.Values{}
+					v.Add("in_reply_to_status_id", fmt.Sprint(tweet.Id, true))
+					t.post(result, v)
 				}
-				//result := execOnContainer(ctx, cmd)
 				//fmt.Println(tweet.Text)
 				//fmt.Println(tweet)
 			}
