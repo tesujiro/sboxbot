@@ -42,7 +42,7 @@ mainloop:
 					fmt.Printf("==>exec\n")
 					//t.retweet(tweet.Id, true)
 					cmd := strings.Replace(tweet.Text, hash, "", -1)
-					cmd = strings.TrimRight(cmd, "\n")
+					//cmd = strings.TrimRight(cmd, "\n")
 					result := execOnContainer(ctx, cmd)
 					v := url.Values{}
 					v.Add("in_reply_to_status_id", fmt.Sprint(tweet.Id, true))

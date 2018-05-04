@@ -45,6 +45,9 @@ func (t *Twitter) search(hashtag string) []anaconda.Tweet {
 }
 
 func (t *Twitter) post(s string, v url.Values) {
+	if s == "" {
+		s = "nil"
+	}
 	_, err := t.api.PostTweet(s, v)
 	if err != nil {
 		panic(err)
