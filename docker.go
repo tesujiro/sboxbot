@@ -3,9 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
-	"io"
 	"io/ioutil"
-	"os"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
@@ -22,27 +20,28 @@ func execOnContainer(ctx context.Context, cmd string) string {
 		return fmt.Sprintf("%v", err)
 	}
 
-	reader, err := cli.ImagePull(ctx, "docker.io/library/alpine", types.ImagePullOptions{})
-	if err != nil {
-		//panic(err)
-		fmt.Printf("Container Image Pull ERROR: %v\n", err)
-		return fmt.Sprintf("%v", err)
-	}
-	io.Copy(os.Stdout, reader)
+	/*
+		reader, err := cli.ImagePull(ctx, "docker.io/library/alpine", types.ImagePullOptions{})
+		if err != nil {
+			//panic(err)
+			fmt.Printf("Container Image Pull ERROR: %v\n", err)
+			return fmt.Sprintf("%v", err)
+		}
+		io.Copy(os.Stdout, reader)
+	*/
 
 	// Create Container
 	resp, err := cli.ContainerCreate(ctx, &container.Config{
-		Image: "alpine",
-		Cmd:   []string{"/bin/ash"},
-		//Cmd:   []string{"echo", "hello world"},
-		//Cmd: strings.Split(cmd, " "),
-		//Cmd: []string{"sleep", "10"},
+		//Image:        "alpine",
+		//Cmd:          []string{"/bin/ash"},
+		Image:        "centos",
+		Cmd:          []string{"/bin/bash"},
 		OpenStdin:    true,
 		StdinOnce:    true,
 		AttachStdin:  true,
 		AttachStdout: true,
 		AttachStderr: true,
-		Tty:          true,
+		Tty:          false,
 	}, nil, nil, "")
 	if err != nil {
 		//panic(err)
@@ -52,7 +51,7 @@ func execOnContainer(ctx context.Context, cmd string) string {
 
 	defer func() {
 		if err := cli.ContainerRemove(ctx, resp.ID, types.ContainerRemoveOptions{}); err != nil {
-			fmt.Printf("ContainerRemove ERROR: %v", err)
+			fmt.Printf("ContainerRemove ERROR: %v\n", err)
 		}
 	}()
 
@@ -63,7 +62,7 @@ func execOnContainer(ctx context.Context, cmd string) string {
 	}
 	defer func() {
 		if err := cli.ContainerStop(ctx, resp.ID, nil); err != nil {
-			fmt.Printf("ContainerStop ERROR: %v", err)
+			fmt.Printf("ContainerStop ERROR: %v\n", err)
 		}
 	}()
 
@@ -86,7 +85,8 @@ func execOnContainer(ctx context.Context, cmd string) string {
 
 	// Exec Commands
 	//io.WriteString(os.Stdin, cmd)
-	//os.Stdin.Close()
+	//os.Stdin.Closefalse()
+	cmd = fmt.Sprintf("%s\nexit\n", cmd)
 	hjConn.Conn.Write([]byte(cmd))
 
 	statusCh, errCh := cli.ContainerWait(ctx, resp.ID, container.WaitConditionNotRunning)
@@ -107,6 +107,7 @@ func execOnContainer(ctx context.Context, cmd string) string {
 		return fmt.Sprintf("%v", err)
 	}
 	result := string(b)
+	fmt.Println(result)
 	return result
 
 	// get log

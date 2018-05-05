@@ -9,6 +9,8 @@ import (
 	"github.com/ChimeraCoder/anaconda"
 )
 
+const TWEET_MAX_CHARS = 180
+
 type Twitter struct {
 	api        *anaconda.TwitterApi
 	startedAt  time.Time
@@ -48,6 +50,7 @@ func (t *Twitter) post(s string, v url.Values) {
 	if s == "" {
 		s = "nil"
 	}
+	s = s[0 : TWEET_MAX_CHARS-1]
 	_, err := t.api.PostTweet(s, v)
 	if err != nil {
 		panic(err)
