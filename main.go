@@ -21,7 +21,7 @@ mainloop:
 		case <-ctx.Done():
 			break mainloop
 		case <-tick:
-			fmt.Printf("twitter.search %s\n", time.Now())
+			fmt.Printf("twitter.search now=%s\tlatestId=%v\n", time.Now(), t.savedata.LatestId)
 			for i, tweet := range t.search() {
 				fmt.Printf("key:%d\tid:%d\tCreatedAt:%s\tUser.ScreenName:%s\n", i, tweet.Id, tweet.CreatedAt, tweet.User.ScreenName)
 				fmt.Println("=============================================")
