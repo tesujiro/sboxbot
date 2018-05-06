@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"net/url"
 	"strings"
 	"time"
 )
@@ -15,7 +14,6 @@ func main() {
 	t := newTwitter()
 	//tick := time.NewTicker(time.Second * time.Duration(60)).C
 	tick := time.NewTicker(time.Second * time.Duration(10)).C
-	hash := "#sboxbot"
 
 mainloop:
 	for {
@@ -24,7 +22,7 @@ mainloop:
 			break mainloop
 		case <-tick:
 			fmt.Printf("twitter.search %s\n", time.Now())
-			for i, tweet := range t.search(hash) {
+			for i, tweet := range t.search() {
 				createdAt, err := tweet.CreatedAtTime()
 				if err != nil {
 					panic(err)
@@ -41,12 +39,10 @@ mainloop:
 				if tweet.RetweetCount == 0 {
 					fmt.Printf("==>exec\n")
 					//t.retweet(tweet.Id, true)
-					cmd := strings.Replace(tweet.Text, hash, "", -1)
+					cmd := strings.Replace(tweet.Text, t.hashtag, "", -1)
 					//cmd = strings.TrimRight(cmd, "\n")
 					result := execOnContainer(ctx, cmd)
-					v := url.Values{}
-					v.Add("in_reply_to_status_id", fmt.Sprint(tweet.Id, true))
-					t.post(result, v)
+					t.quotedTweet(result, &tweet)
 				}
 				//fmt.Println(tweet.Text)
 				//fmt.Println(tweet)
