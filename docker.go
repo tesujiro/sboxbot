@@ -50,7 +50,7 @@ func execOnContainer(ctx context.Context, cmd string) string {
 	}
 
 	defer func() {
-		if err := cli.ContainerRemove(ctx, resp.ID, types.ContainerRemoveOptions{}); err != nil {
+		if err := cli.ContainerRemove(context.Background(), resp.ID, types.ContainerRemoveOptions{}); err != nil {
 			fmt.Printf("ContainerRemove ERROR: %v\n", err)
 		}
 	}()
@@ -61,7 +61,7 @@ func execOnContainer(ctx context.Context, cmd string) string {
 		return fmt.Sprintf("%v", err)
 	}
 	defer func() {
-		if err := cli.ContainerStop(ctx, resp.ID, nil); err != nil {
+		if err := cli.ContainerStop(context.Background(), resp.ID, nil); err != nil {
 			fmt.Printf("ContainerStop ERROR: %v\n", err)
 		}
 	}()
@@ -106,7 +106,7 @@ func execOnContainer(ctx context.Context, cmd string) string {
 		fmt.Printf("Container Read ERROR: %v\n", err)
 		return fmt.Sprintf("%v", err)
 	}
-	result := string(b)
+	result := string(b)[8:]
 	fmt.Println(result)
 	return result
 
