@@ -114,18 +114,13 @@ func (c *instance) run(ctx context.Context) error {
 		// Exec Commands
 		//io.WriteString(os.Stdin, cmd)
 		//os.Stdin.Closefalse()
-		/*
-			cmd = fmt.Sprintf("%s\nexit\n", cmd)
-			hjConn.Conn.Write([]byte(cmd))
-		*/
-		//var wg sync.WaitGroup
-		//wg.Add(1)
 		for cmd := range c.cmdCh {
 			fmt.Printf("cmd received:%v\n", cmd)
-			cmd = fmt.Sprintf("%s\nexit\n", cmd)
+			//cmd = fmt.Sprintf("%s\nexit\n", cmd)
 			hjConn.Conn.Write([]byte(cmd))
 		}
 
+		hjConn.Conn.Write([]byte(fmt.Sprintln("exit")))
 		statusCh, errCh := cli.ContainerWait(ctx, resp.ID, container.WaitConditionNotRunning)
 		select {
 		case err := <-errCh:
@@ -147,17 +142,5 @@ func (c *instance) run(ctx context.Context) error {
 		c.resultCh <- result
 	}()
 
-	/*
-		b, err := ioutil.ReadAll(hjConn.Conn)
-		if err != nil {
-			fmt.Printf("Container Read ERROR: %v\n", err)
-			return err
-		}
-		result := string(b)[8:]
-		fmt.Println(result)
-		return result
-	*/
-	//wg.Wait()
 	return nil
-
 }
