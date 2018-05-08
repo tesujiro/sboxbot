@@ -151,8 +151,10 @@ func (c *instance) doRun(ctx context.Context) {
 		c.exitErrCh <- err
 		return
 	}
-	//result := string(b)[8:]
 	result := string(b)
+	if len(result) > 8 {
+		result = result[8:] // remove header bytes
+	}
 	fmt.Println("result:" + result)
 	c.resultCh <- result
 	c.exitErrCh <- nil
