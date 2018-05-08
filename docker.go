@@ -115,7 +115,7 @@ func (c *instance) run(ctx context.Context) error {
 		//io.WriteString(os.Stdin, cmd)
 		//os.Stdin.Closefalse()
 		for cmd := range c.cmdCh {
-			fmt.Printf("cmd received:%v\n", cmd)
+			fmt.Printf("cmd received:%v", cmd)
 			//cmd = fmt.Sprintf("%s\nexit\n", cmd)
 			hjConn.Conn.Write([]byte(cmd))
 		}

@@ -29,30 +29,27 @@ mainloop:
 				fmt.Println("=============================================")
 				//fmt.Printf("%s\n", tweet)
 				//fmt.Println("=============================================")
-				if tweet.RetweetCount == 0 { //TODO: remove
-					fmt.Printf("==>exec\n")
-					cmd := strings.Replace(tweet.Text, t.hashtag, "", -1)
-					//result := execOnContainer(ctx, cmd)
-					d := newDockerContainer()
-					if err := d.run(ctx); err != nil {
-						result := fmt.Sprintf("%v", err)
-						t.quotedTweet(result, &tweet)
-						panic(err)
-					}
-					if err := d.exec(cmd); err != nil {
-						result, _ := d.exit()
-						result += fmt.Sprintf("%v", err)
-						t.quotedTweet(result, &tweet)
-						panic(err)
-					}
-					result, err := d.exit()
-					if err != nil {
-						result += fmt.Sprintf("%v", err)
-						t.quotedTweet(result, &tweet)
-						panic(err)
-					}
+				fmt.Printf("==>exec\n")
+				cmd := strings.Replace(tweet.Text, t.hashtag, "", -1)
+				d := newDockerContainer()
+				if err := d.run(ctx); err != nil {
+					result := fmt.Sprintf("%v", err)
 					t.quotedTweet(result, &tweet)
+					panic(err)
 				}
+				if err := d.exec(cmd); err != nil {
+					result, _ := d.exit()
+					result += fmt.Sprintf("%v", err)
+					t.quotedTweet(result, &tweet)
+					panic(err)
+				}
+				result, err := d.exit()
+				if err != nil {
+					result += fmt.Sprintf("%v", err)
+					t.quotedTweet(result, &tweet)
+					panic(err)
+				}
+				t.quotedTweet(result, &tweet)
 			}
 		}
 	}

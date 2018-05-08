@@ -131,7 +131,7 @@ func (t *Twitter) retweet(id int64, trimUser bool) {
 
 func (t *Twitter) quotedTweet(result string, tweet *anaconda.Tweet) {
 	// func quotedTweet(tweet,result)
-	status := fmt.Sprintf("@%s\n%s\n%s\nhttps://twitter.com/%s/status/%d", tweet.User.ScreenName, result, t.hashtag, tweet.User.ScreenName, tweet.Id)
+	status := fmt.Sprintf("@%s\n%s%s\nhttps://twitter.com/%s/status/%d", tweet.User.ScreenName, result, t.hashtag, tweet.User.ScreenName, tweet.Id)
 	v := url.Values{}
 	v.Add("quoted_status_id", fmt.Sprintf("%d", tweet.Id))
 	v.Add("quoted_status_id_str", tweet.IdStr)
