@@ -50,6 +50,13 @@ mainloop:
 					panic(err)
 				}
 				t.quotedTweet(result, &tweet)
+				if t.savedata.LatestId < tweet.Id {
+					t.savedata.LatestId = tweet.Id
+					fmt.Printf("t.savedata.LatestId =%d\n", t.savedata.LatestId)
+					if err := t.writeSavedata(); err != nil {
+						panic(err)
+					}
+				}
 			}
 		}
 	}

@@ -91,13 +91,15 @@ func (t *Twitter) search() []anaconda.Tweet {
 	if err != nil {
 		panic(err)
 	}
-	if len(searchResult.Statuses) > 0 {
-		t.savedata.LatestId = searchResult.Metadata.MaxId
-		fmt.Printf("t.savedata.LatestId =%d\n", t.savedata.LatestId)
-		if err := t.writeSavedata(); err != nil {
-			panic(err)
+	/*
+		if len(searchResult.Statuses) > 0 {
+			t.savedata.LatestId = searchResult.Metadata.MaxId
+			fmt.Printf("t.savedata.LatestId =%d\n", t.savedata.LatestId)
+			if err := t.writeSavedata(); err != nil {
+				panic(err)
+			}
 		}
-	}
+	*/
 	return searchResult.Statuses
 }
 
