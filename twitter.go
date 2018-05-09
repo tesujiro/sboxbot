@@ -11,7 +11,7 @@ import (
 	"github.com/ChimeraCoder/anaconda"
 )
 
-const TWEET_MAX_CHARS = 180
+const TWEET_MAX_CHARS = 280
 
 type savedata struct {
 	LatestId int64 `json:"latest_id"`
@@ -83,7 +83,9 @@ func (t *Twitter) search() []anaconda.Tweet {
 	v := url.Values{}
 	if t.savedata.LatestId != 0 {
 		//fmt.Printf("since_id=%d\n", t.savedata.LatestId)
-		v.Add("since_id", fmt.Sprintf("%d", t.savedata.LatestId+1))
+		//v.Add("since_id", fmt.Sprintf("%d", t.savedata.LatestId+1))
+		v.Set("since_id", fmt.Sprintf("%d", t.savedata.LatestId+1))
+		//v.Set("include_entities", "true")
 	}
 	searchResult, err := t.api.GetSearch(t.hashtag, v)
 	if err != nil {
