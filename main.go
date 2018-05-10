@@ -7,6 +7,23 @@ import (
 	"time"
 )
 
+func execOnContainer(ctx context.Context, cmd string) (string, error) {
+	d := newDockerContainer()
+	if err := d.run(ctx); err != nil {
+		return "", err
+	}
+	if err := d.exec(cmd); err != nil {
+		result, _ := d.exit()
+		result += fmt.Sprintf("%v", err)
+		return result, err
+	}
+	result, err := d.exit()
+	if err != nil {
+		return "", err
+	}
+	return result, nil
+}
+
 func main() {
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -24,32 +41,47 @@ mainloop:
 			fmt.Printf("twitter.search now=%s\tlatestId=%v\n", time.Now(), t.savedata.LatestId)
 			for i, tweet := range t.search() {
 				fmt.Printf("key:%d\tid:%d\tCreatedAt:%s\tUser.ScreenName:%s\n", i, tweet.Id, tweet.CreatedAt, tweet.User.ScreenName)
+				//tweet = t.getTweet(tweet.Id)
 				fmt.Println("=============================================")
 				fmt.Println(tweet.Text)
+				fmt.Println("=============================================")
+				fmt.Println(tweet.Entities)
 				fmt.Println("=============================================")
 				fmt.Printf("%v\n", tweet)
 				fmt.Println("=============================================")
 				fmt.Printf("==>exec\n")
 				cmd := strings.Replace(tweet.Text, t.hashtag, "", -1)
-				d := newDockerContainer()
-				if err := d.run(ctx); err != nil {
+
+				result, err := execOnContainer(ctx, cmd)
+				if err != nil {
 					result := fmt.Sprintf("%v", err)
 					t.quotedTweet(result, &tweet)
 					panic(err)
 				}
-				if err := d.exec(cmd); err != nil {
-					result, _ := d.exit()
-					result += fmt.Sprintf("%v", err)
-					t.quotedTweet(result, &tweet)
-					panic(err)
-				}
-				result, err := d.exit()
-				if err != nil {
-					result += fmt.Sprintf("%v", err)
-					t.quotedTweet(result, &tweet)
-					panic(err)
-				}
+
+				/*
+					d := newDockerContainer()
+					if err := d.run(ctx); err != nil {
+						result := fmt.Sprintf("%v", err)
+						t.quotedTweet(result, &tweet)
+						panic(err)
+					}
+					if err := d.exec(cmd); err != nil {
+						result, _ := d.exit()
+						result += fmt.Sprintf("%v", err)
+						t.quotedTweet(result, &tweet)
+						panic(err)
+					}
+					result, err := d.exit()
+					if err != nil {
+						result += fmt.Sprintf("%v", err)
+						t.quotedTweet(result, &tweet)
+						panic(err)
+					}
+				*/
 				t.quotedTweet(result, &tweet)
+
+				//Save LatestId
 				if t.savedata.LatestId < tweet.Id {
 					t.savedata.LatestId = tweet.Id
 					fmt.Printf("t.savedata.LatestId =%d\n", t.savedata.LatestId)
