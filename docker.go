@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io/ioutil"
+	"net"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
@@ -16,6 +17,7 @@ type instance struct {
 	runErrCh  chan error
 	execErrCh chan error
 	exitErrCh chan error
+	conn      net.Conn
 }
 
 func newDockerContainer() *instance {
@@ -41,20 +43,21 @@ func (c *instance) exec(cmd string) error {
 	return err
 }
 
+func (c *instance) result() (string, error) {
+	b, err := ioutil.ReadAll(c.conn)
+	if err != nil {
+		return "", err
+	}
+	result := string(b)
+	if len(result) > 8 {
+		result = result[8:] // remove header bytes
+	}
+	return result, nil
+}
+
 func (c *instance) exit() (string, error) {
 	close(c.cmdCh)
-	var result string
-	var err error
-
-	for i := 1; i <= 2; i++ {
-		select {
-		case err := <-c.exitErrCh:
-			return "", err
-		case result = <-c.resultCh:
-		}
-	}
-
-	return result, err
+	return <-c.resultCh, <-c.exitErrCh
 }
 
 //func execOnContainer(ctx context.Context, cmd string) string {
@@ -126,39 +129,31 @@ func (c *instance) doRun(ctx context.Context) {
 		return
 	}
 	defer hjConn.Close()
+	c.conn = hjConn.Conn
 	fmt.Printf("Container Attached\n")
 	c.runErrCh <- nil
 
 	for cmd := range c.cmdCh {
 		fmt.Printf("cmd received:%v", cmd)
 		//cmd = fmt.Sprintf("%s\nexit\n", cmd)
-		hjConn.Conn.Write([]byte(cmd))
+		c.conn.Write([]byte(cmd))
 		c.execErrCh <- nil
 	}
 
-	hjConn.Conn.Write([]byte(fmt.Sprintln("exit")))
+	c.conn.Write([]byte(fmt.Sprintln("exit")))
 	statusCh, errCh := cli.ContainerWait(ctx, resp.ID, container.WaitConditionNotRunning)
 	select {
 	case err := <-errCh:
 		if err != nil {
 			fmt.Printf("Container errCh ERROR: %v\n", err)
+			result, _ := c.result()
+			c.resultCh <- result
 			c.exitErrCh <- err
-			//return
 		}
 	case <-statusCh:
 	}
 	fmt.Printf("Container Wait Finished\n")
-	b, err := ioutil.ReadAll(hjConn.Conn)
-	if err != nil {
-		fmt.Printf("Container Read ERROR: %v\n", err)
-		c.exitErrCh <- err
-		return
-	}
-	result := string(b)
-	if len(result) > 8 {
-		result = result[8:] // remove header bytes
-	}
-	fmt.Println("result:" + result)
+	result, _ := c.result()
 	c.resultCh <- result
 	c.exitErrCh <- nil
 	return

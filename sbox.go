@@ -41,7 +41,7 @@ func quoteTweet(ctx context.Context, t *Twitter) error {
 		defer cancel()
 		result, err := execOnContainer(ctxWithTimeout, cmd)
 		if err != nil {
-			result = fmt.Sprintf("%v\n%v", result, err)
+			result = fmt.Sprintf("%v\n%v\n", result, err)
 		}
 		t.quotedTweet(result, &tweet)
 
