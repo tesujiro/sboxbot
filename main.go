@@ -14,14 +14,10 @@ func execOnContainer(ctx context.Context, cmd string) (string, error) {
 	}
 	if err := d.exec(cmd); err != nil {
 		result, _ := d.exit()
-		result += fmt.Sprintf("%v", err)
+		//result += fmt.Sprintf("%v", err)
 		return result, err
 	}
-	result, err := d.exit()
-	if err != nil {
-		return "", err
-	}
-	return result, nil
+	return d.exit()
 }
 
 func main() {
@@ -52,33 +48,12 @@ mainloop:
 				fmt.Printf("==>exec\n")
 				cmd := strings.Replace(tweet.Text, t.hashtag, "", -1)
 
-				result, err := execOnContainer(ctx, cmd)
+				ctxWithTimeout, cancel := context.WithTimeout(ctx, 10*time.Second)
+				defer cancel()
+				result, err := execOnContainer(ctxWithTimeout, cmd)
 				if err != nil {
-					result := fmt.Sprintf("%v", err)
-					t.quotedTweet(result, &tweet)
-					panic(err)
+					result = fmt.Sprintf("%v\n%v", result, err)
 				}
-
-				/*
-					d := newDockerContainer()
-					if err := d.run(ctx); err != nil {
-						result := fmt.Sprintf("%v", err)
-						t.quotedTweet(result, &tweet)
-						panic(err)
-					}
-					if err := d.exec(cmd); err != nil {
-						result, _ := d.exit()
-						result += fmt.Sprintf("%v", err)
-						t.quotedTweet(result, &tweet)
-						panic(err)
-					}
-					result, err := d.exit()
-					if err != nil {
-						result += fmt.Sprintf("%v", err)
-						t.quotedTweet(result, &tweet)
-						panic(err)
-					}
-				*/
 				t.quotedTweet(result, &tweet)
 
 				//Save LatestId

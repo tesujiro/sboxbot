@@ -44,13 +44,16 @@ func (c *instance) exec(cmd string) error {
 func (c *instance) exit() (string, error) {
 	close(c.cmdCh)
 	var result string
-	select {
-	case err := <-c.exitErrCh:
-		return "", err
-	case result = <-c.resultCh:
+	var err error
+
+	for i := 1; i <= 2; i++ {
+		select {
+		case err := <-c.exitErrCh:
+			return "", err
+		case result = <-c.resultCh:
+		}
 	}
 
-	err := <-c.exitErrCh
 	return result, err
 }
 
@@ -140,7 +143,7 @@ func (c *instance) doRun(ctx context.Context) {
 		if err != nil {
 			fmt.Printf("Container errCh ERROR: %v\n", err)
 			c.exitErrCh <- err
-			return
+			//return
 		}
 	case <-statusCh:
 	}
