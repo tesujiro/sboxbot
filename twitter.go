@@ -82,11 +82,10 @@ func (t *Twitter) writeSavedata() error {
 func (t *Twitter) search() []anaconda.Tweet {
 	v := url.Values{}
 	if t.savedata.LatestId != 0 {
-		//fmt.Printf("since_id=%d\n", t.savedata.LatestId)
-		//v.Add("since_id", fmt.Sprintf("%d", t.savedata.LatestId+1))
 		v.Set("since_id", fmt.Sprintf("%d", t.savedata.LatestId+1))
-		//v.Set("include_entities", "true")
 	}
+	v.Set("include_entities", "true")
+	//fmt.Printf("URL PARAM:%v\n", v)
 	searchResult, err := t.api.GetSearch(t.hashtag, v)
 	if err != nil {
 		panic(err)
@@ -105,6 +104,7 @@ func (t *Twitter) search() []anaconda.Tweet {
 
 func (t *Twitter) getTweet(id int64) anaconda.Tweet {
 	v := url.Values{}
+	//v.Set("include_entities", "true")
 	searchResult, err := t.api.GetTweet(id, v)
 	if err != nil {
 		fmt.Println("GetTweet Error")
