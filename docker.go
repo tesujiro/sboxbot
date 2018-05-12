@@ -1,9 +1,9 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"fmt"
-	"io/ioutil"
 	"net"
 
 	"github.com/docker/docker/api/types"
@@ -43,24 +43,28 @@ func (c *instance) exec(cmd string) error {
 	return err
 }
 
-func (c *instance) result() (string, error) {
-	b, err := ioutil.ReadAll(c.conn)
-	if err != nil {
-		return "", err
-	}
-	result := string(b)
-	if len(result) > 8 {
-		result = result[8:] // remove header bytes
-	}
-	return result, nil
-}
-
 func (c *instance) exit() (string, error) {
 	close(c.cmdCh)
 	return <-c.resultCh, <-c.exitErrCh
 }
 
-//func execOnContainer(ctx context.Context, cmd string) string {
+const BUFSIZE = 1024
+
+func (c *instance) result() (string, error) {
+	//buf := new(bytes.Buffer)
+	var err error
+	buf := make([]byte, BUFSIZE)
+	_, err = c.conn.Read(buf)
+	//fmt.Printf("read buffer \n%v\n", hex.Dump(buf))
+	buf = bytes.TrimRight(buf, "\x00")
+	result := string(buf)
+	//fmt.Printf("string len(%v) : %v\n", len(result), result)
+	if len(result) > 8 {
+		result = result[8:] // remove header bytes
+	}
+	return result, err
+}
+
 func (c *instance) doRun(ctx context.Context) {
 
 	cli, err := client.NewClientWithOpts()
