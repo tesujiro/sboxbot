@@ -117,9 +117,9 @@ func (t *Twitter) post(s string, v url.Values) {
 	if s == "" {
 		s = "nil"
 	}
-	if len(s) > TWEET_MAX_CHARS {
-		s = s[0 : TWEET_MAX_CHARS-1]
-	}
+	//if len(s) > TWEET_MAX_CHARS {
+	//s = s[0 : TWEET_MAX_CHARS-1]
+	//}
 	_, err := t.api.PostTweet(s, v)
 	if err != nil {
 		panic(err)
@@ -134,8 +134,13 @@ func (t *Twitter) retweet(id int64, trimUser bool) {
 }
 
 func (t *Twitter) quotedTweet(result string, tweet *anaconda.Tweet) {
-	// func quotedTweet(tweet,result)
-	status := fmt.Sprintf("@%s\n%s%s\nhttps://twitter.com/%s/status/%d", tweet.User.ScreenName, result, t.hashtag, tweet.User.ScreenName, tweet.Id)
+	//status := fmt.Sprintf("@%s\n%s%s\nhttps://twitter.com/%s/status/%d", tweet.User.ScreenName, result, t.hashtag, tweet.User.ScreenName, tweet.Id)
+	header := fmt.Sprintf("@%s\n", tweet.User.ScreenName)
+	footer := fmt.Sprintf("%s\nhttps://twitter.com/%s/status/%d", t.hashtag, tweet.User.ScreenName, tweet.Id)
+	if len(header+result+footer) > TWEET_MAX_CHARS {
+		result = result[0:TWEET_MAX_CHARS-1-len(header+footer)] + "\n"
+	}
+	status := header + result + footer
 	v := url.Values{}
 	v.Add("quoted_status_id", fmt.Sprintf("%d", tweet.Id))
 	v.Add("quoted_status_id_str", tweet.IdStr)
