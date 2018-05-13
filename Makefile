@@ -55,3 +55,6 @@ install:
 uninstall:
 	kubectl delete -f deploy.yaml
 
+logs:
+	kubectl logs `kubectl get po | awk '/$(MODULE)/{print $$1}'`
+
