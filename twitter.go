@@ -39,7 +39,7 @@ func newTwitter() *Twitter {
 		os.Exit(1)
 	}
 
-	savefile := filepath.Join("/tmp", hash+".json") //TODO:
+	savefile := filepath.Join("./volume", hash+".json") //TODO:
 	t := Twitter{
 		api:      GetTwitterApi(),
 		hashtag:  hash,
@@ -144,6 +144,7 @@ func (t *Twitter) quotedTweet(result string, tweet *anaconda.Tweet) {
 	v := url.Values{}
 	v.Add("quoted_status_id", fmt.Sprintf("%d", tweet.Id))
 	v.Add("quoted_status_id_str", tweet.IdStr)
+	//v.Add("in_reply_to_user_id", fmt.Sprintf("%d", tweet.User.Id))
 
 	/*
 		jsonBytes, err := json.Marshal(tweet)
@@ -154,9 +155,6 @@ func (t *Twitter) quotedTweet(result string, tweet *anaconda.Tweet) {
 		v.Add("quoted_status", fmt.Sprintf("%s", jsonBytes))
 	*/
 
-	v.Add("in_reply_to_status_id", fmt.Sprintf("%d", tweet.Id))
-	v.Add("in_reply_to_status_id_str", tweet.IdStr)
-	//v.Add("in_reply_to_user_id", fmt.Sprintf("%d", tweet.User.Id))
 	fmt.Println("=============================================")
 	fmt.Printf("%s\n", status)
 	fmt.Println("=============================================")
