@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sbox
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: sbox
+  template:
+    metadata:
+      labels: 
+        app: sbox
+        #version: v1
+    spec:
+      containers:
+      - name: sbox
+        image: localhost:5000/sbox
+        volumeMounts:
+        - mountPath: /var/run/docker.sock
+          name: docker-volume
+      volumes:
+      - name: docker-volume
+        hostPath:
+          # directory location on host
+          path: /var/run/docker.sock
+          # this field is optional
+          type: Socket
+---
