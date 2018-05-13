@@ -33,6 +33,9 @@ func GetTwitterApi() *anaconda.TwitterApi {
 }
 
 func newTwitter() *Twitter {
+	for _, v := range []string{"HASHTAG", "TWITTER_CONSUMER_KEY", "TWITTER_CONSUMER_SECRET", "TWITTER_ACCESS_TOKEN", "TWITTER_ACCESS_TOKEN_SECRET"} {
+		fmt.Printf("%v=%v\n", v, os.Getenv(v))
+	}
 	hash := os.Getenv("HASHTAG")
 	if hash == "" {
 		fmt.Println("No Environment Variable (HASHTAG,TWITTER_CONSUMER_KEY,TWITTER_CONSUMER_SECRET,TWITTER_ACCESS_TOKEN,TWITTER_ACCESS_TOKEN_SECRET)")

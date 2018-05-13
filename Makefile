@@ -24,6 +24,21 @@ register:
 	docker rmi localhost:5000/$(MODULE)
 	docker pull localhost:5000/$(MODULE)
 
+create_secret:
+	/bin/echo -n $$HASHTAG >./.HASHTAG
+	/bin/echo -n $$TWITTER_CONSUMER_KEY >./.TWITTER_CONSUMER_KEY
+	/bin/echo -n $$TWITTER_CONSUMER_SECRET >./.TWITTER_CONSUMER_SECRET
+	/bin/echo -n $$TWITTER_ACCESS_TOKEN >./.TWITTER_ACCESS_TOKEN
+	/bin/echo -n $$TWITTER_ACCESS_TOKEN_SECRET >./.TWITTER_ACCESS_TOKEN_SECRET
+	kubectl create secret generic twitter-apikey --from-file=HASHTAG=./.HASHTAG --from-file=TWITTER_CONSUMER_KEY=./.TWITTER_CONSUMER_KEY --from-file=TWITTER_CONSUMER_SECRET=./.TWITTER_CONSUMER_SECRET --from-file=TWITTER_ACCESS_TOKEN=./.TWITTER_ACCESS_TOKEN --from-file=TWITTER_ACCESS_TOKEN_SECRET=./.TWITTER_ACCESS_TOKEN_SECRET
+	for key in HASHTAG TWITTER_CONSUMER_KEY TWITTER_CONSUMER_SECRET TWITTER_ACCESS_TOKEN TWITTER_ACCESS_TOKEN_SECRET;do\
+		cat ./.$$key ; \
+		rm ./.$$key ; \
+	done
+	
+delete_secret:
+	kubectl delete secret twitter-apikey
+	
 test:
 	#go test ./
 	#go test sbox.go  sbox_test.go twitter.go docker.go 
