@@ -88,6 +88,7 @@ func (t *Twitter) search() []anaconda.Tweet {
 		v.Set("since_id", fmt.Sprintf("%d", t.savedata.LatestId+1))
 	}
 	v.Set("include_entities", "true")
+	v.Set("exclude", "retweets")
 	//fmt.Printf("URL PARAM:%v\n", v)
 	searchResult, err := t.api.GetSearch(t.hashtag, v)
 	if err != nil {
