@@ -146,9 +146,12 @@ func (t *Twitter) quotedTweet(result string, tweet *anaconda.Tweet) {
 	}
 	status := header + result + footer
 	v := url.Values{}
-	v.Add("quoted_status_id", fmt.Sprintf("%d", tweet.Id))
-	v.Add("quoted_status_id_str", tweet.IdStr)
-	//v.Add("in_reply_to_user_id", fmt.Sprintf("%d", tweet.User.Id))
+	//v.Add("quoted_status_id", fmt.Sprintf("%d", tweet.Id))
+	//v.Add("quoted_status_id_str", tweet.IdStr)
+	v.Add("in_reply_to_user_id", fmt.Sprintf("%d", tweet.User.Id))
+	v.Add("in_reply_to_user_id_str", tweet.User.IdStr)
+	v.Add("in_reply_to_status_id", fmt.Sprintf("%d", tweet.Id))
+	v.Add("in_reply_to_status_id_str", tweet.User.IdStr)
 
 	/*
 		jsonBytes, err := json.Marshal(tweet)
