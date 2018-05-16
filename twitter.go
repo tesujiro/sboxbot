@@ -82,7 +82,7 @@ func (t *Twitter) writeSavedata() error {
 	return nil
 }
 
-func (t *Twitter) search() []anaconda.Tweet {
+func (t *Twitter) search() ([]anaconda.Tweet, error) {
 	v := url.Values{}
 	if t.savedata.LatestId != 0 {
 		v.Set("since_id", fmt.Sprintf("%d", t.savedata.LatestId+1))
@@ -92,52 +92,31 @@ func (t *Twitter) search() []anaconda.Tweet {
 	//fmt.Printf("URL PARAM:%v\n", v)
 	searchResult, err := t.api.GetSearch(t.hashtag, v)
 	if err != nil {
-		panic(err)
+		return []anaconda.Tweet{}, err
 	}
-	/*
-		if len(searchResult.Statuses) > 0 {
-			t.savedata.LatestId = searchResult.Metadata.MaxId
-			fmt.Printf("t.savedata.LatestId =%d\n", t.savedata.LatestId)
-			if err := t.writeSavedata(); err != nil {
-				panic(err)
-			}
-		}
-	*/
-	return searchResult.Statuses
+	return searchResult.Statuses, nil
 }
 
-func (t *Twitter) getTweet(id int64) anaconda.Tweet {
+func (t *Twitter) getTweet(id int64) (anaconda.Tweet, error) {
 	v := url.Values{}
 	//v.Set("include_entities", "true")
-	searchResult, err := t.api.GetTweet(id, v)
-	if err != nil {
-		fmt.Println("GetTweet Error")
-		panic(err)
-	}
-	return searchResult
+	return t.api.GetTweet(id, v)
 }
 
-func (t *Twitter) post(s string, v url.Values) {
+func (t *Twitter) post(s string, v url.Values) error {
 	if s == "" {
 		s = "nil"
 	}
-	//if len(s) > TWEET_MAX_CHARS {
-	//s = s[0 : TWEET_MAX_CHARS-1]
-	//}
 	_, err := t.api.PostTweet(s, v)
-	if err != nil {
-		panic(err)
-	}
+	return err
 }
 
-func (t *Twitter) retweet(id int64, trimUser bool) {
+func (t *Twitter) retweet(id int64, trimUser bool) error {
 	_, err := t.api.Retweet(id, trimUser)
-	if err != nil {
-		panic(err)
-	}
+	return err
 }
 
-func (t *Twitter) quotedTweet(result string, tweet *anaconda.Tweet) {
+func (t *Twitter) quotedTweet(result string, tweet *anaconda.Tweet) error {
 	//status := fmt.Sprintf("@%s\n%s%s\nhttps://twitter.com/%s/status/%d", tweet.User.ScreenName, result, t.hashtag, tweet.User.ScreenName, tweet.Id)
 	header := fmt.Sprintf("@%s\n", tweet.User.ScreenName)
 	footer := fmt.Sprintf("%s\nhttps://twitter.com/%s/status/%d", t.hashtag, tweet.User.ScreenName, tweet.Id)
@@ -145,6 +124,7 @@ func (t *Twitter) quotedTweet(result string, tweet *anaconda.Tweet) {
 		result = result[0:TWEET_MAX_CHARS-1-len(header+footer)] + "\n"
 	}
 	status := header + result + footer
+	fmt.Printf("len(status)=%d\n", len(status))
 	v := url.Values{}
 	//v.Add("quoted_status_id", fmt.Sprintf("%d", tweet.Id))
 	//v.Add("quoted_status_id_str", tweet.IdStr)
@@ -166,5 +146,5 @@ func (t *Twitter) quotedTweet(result string, tweet *anaconda.Tweet) {
 	fmt.Printf("%s\n", status)
 	fmt.Println("=============================================")
 
-	t.post(status, v)
+	return t.post(status, v)
 }

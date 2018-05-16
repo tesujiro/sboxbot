@@ -24,7 +24,11 @@ func execOnContainer(ctx context.Context, cmd string) (string, error) {
 
 func quoteTweet(ctx context.Context, t *Twitter) error {
 	fmt.Printf("twitter.search now=%s\tlatestId=%v\n", time.Now(), t.savedata.LatestId)
-	for i, tweet := range t.search() {
+	tweets, err := t.search()
+	if err != nil {
+		fmt.Printf("search error:%v\n", err)
+	}
+	for i, tweet := range tweets {
 		fmt.Printf("key:%d\tid:%d\tCreatedAt:%s\tUser.ScreenName:%s\n", i, tweet.Id, tweet.CreatedAt, tweet.User.ScreenName)
 		//tweet = t.getTweet(tweet.Id)
 		fmt.Println("=============================================")
@@ -43,7 +47,9 @@ func quoteTweet(ctx context.Context, t *Twitter) error {
 		if err != nil {
 			result = fmt.Sprintf("%v\n%v\n", result, err)
 		}
-		t.quotedTweet(result, &tweet)
+		if err := t.quotedTweet(result, &tweet); err != nil {
+			return err
+		}
 
 		//Save LatestId
 		if t.savedata.LatestId < tweet.Id {
@@ -64,7 +70,7 @@ func run(ctx context.Context) error {
 	tick := time.NewTicker(time.Second * time.Duration(10)).C
 
 	if err := quoteTweet(ctx, t); err != nil {
-		return err
+		fmt.Printf("quoteTweet error:%v\n", err)
 	}
 mainloop:
 	for {
@@ -73,7 +79,7 @@ mainloop:
 			break mainloop
 		case <-tick:
 			if err := quoteTweet(ctx, t); err != nil {
-				return err
+				fmt.Printf("quoteTweet error:%v\n", err)
 			}
 		}
 	}
