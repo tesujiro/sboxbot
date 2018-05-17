@@ -61,7 +61,7 @@ func (t *Twitter) readSavedata() error {
 	var sd savedata
 	if err := json.Unmarshal(raw, &sd); err != nil {
 		t.savedata = &sd
-		//return err
+		return err
 	}
 	t.savedata = &sd
 
@@ -91,10 +91,7 @@ func (t *Twitter) search() ([]anaconda.Tweet, error) {
 	v.Set("exclude", "retweets")
 	//fmt.Printf("URL PARAM:%v\n", v)
 	searchResult, err := t.api.GetSearch(t.hashtag, v)
-	if err != nil {
-		return []anaconda.Tweet{}, err
-	}
-	return searchResult.Statuses, nil
+	return searchResult.Statuses, err
 }
 
 func (t *Twitter) getTweet(id int64) (anaconda.Tweet, error) {
@@ -132,15 +129,6 @@ func (t *Twitter) quotedTweet(result string, tweet *anaconda.Tweet) error {
 	v.Add("in_reply_to_user_id_str", tweet.User.IdStr)
 	v.Add("in_reply_to_status_id", fmt.Sprintf("%d", tweet.Id))
 	v.Add("in_reply_to_status_id_str", tweet.User.IdStr)
-
-	/*
-		jsonBytes, err := json.Marshal(tweet)
-		if err != nil {
-			fmt.Println("JSON Marshal error:", err)
-			panic(err)
-		}
-		v.Add("quoted_status", fmt.Sprintf("%s", jsonBytes))
-	*/
 
 	fmt.Println("=============================================")
 	fmt.Printf("%s\n", status)
