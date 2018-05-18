@@ -50,7 +50,7 @@ func newTwitter() *Twitter {
 		//startedAt: time.Now(),
 	}
 	if err := t.readSavedata(); err != nil {
-		panic(err)
+		fmt.Println("No Save File!")
 	}
 	return &t
 }
