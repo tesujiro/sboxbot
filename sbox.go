@@ -14,14 +14,6 @@ func execOnContainer(ctx context.Context, cmd string) (string, error) {
 	if err := d.run(ctx); err != nil {
 		return "", err
 	}
-	addLineBreak := func(s string) string {
-		if len(s) > 0 && s[len(s)-1] != '\n' {
-			return s + "\n"
-		} else {
-			return s
-		}
-	}
-	cmd = addLineBreak(cmd)
 	if err := d.exec(cmd); err != nil {
 		result, _ := d.exit()
 		//result += fmt.Sprintf("%v", err)
@@ -47,16 +39,26 @@ func quoteTweet(ctx context.Context, t *Twitter) error {
 		fmt.Printf("%v\n", tweet)
 		fmt.Println("=============================================")
 		fmt.Printf("==>exec\n")
-		cmd := strings.Replace(tweet.FullText, t.hashtag, "", -1)
-
-		ctxWithTimeout, cancel := context.WithTimeout(ctx, 10*time.Second)
-		defer cancel()
-		result, err := execOnContainer(ctxWithTimeout, cmd)
-		if err != nil {
-			result = fmt.Sprintf("%v\n%v\n", result, err)
+		addLineBreak := func(s string) string {
+			if len(s) > 0 && s[len(s)-1] != '\n' {
+				return s + "\n"
+			} else {
+				return s
+			}
 		}
-		if err := t.quotedTweet(result, &tweet); err != nil {
-			return err
+		cmd := strings.Replace(tweet.FullText, t.hashtag, "", -1)
+		cmd = addLineBreak(cmd)
+		if strings.Replace(cmd, " \t\n", "", -1) != "" {
+
+			ctxWithTimeout, cancel := context.WithTimeout(ctx, 10*time.Second)
+			defer cancel()
+			result, err := execOnContainer(ctxWithTimeout, cmd)
+			if err != nil {
+				result = fmt.Sprintf("%v\n%v\n", result, err)
+			}
+			if err := t.quotedTweet(result, &tweet); err != nil {
+				return err
+			}
 		}
 
 		//Save LatestId
