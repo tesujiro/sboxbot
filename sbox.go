@@ -14,6 +14,14 @@ func execOnContainer(ctx context.Context, cmd string) (string, error) {
 	if err := d.run(ctx); err != nil {
 		return "", err
 	}
+	addLineBreak := func(s string) string {
+		if len(s) > 0 && s[len(s)-1] != '\n' {
+			return s + "\n"
+		} else {
+			return s
+		}
+	}
+	cmd = addLineBreak(cmd)
 	if err := d.exec(cmd); err != nil {
 		result, _ := d.exit()
 		//result += fmt.Sprintf("%v", err)
@@ -35,8 +43,8 @@ func quoteTweet(ctx context.Context, t *Twitter) error {
 		fmt.Println(tweet.FullText)
 		//fmt.Println("=============================================")
 		//fmt.Println(tweet.Entities)
-		//fmt.Println("=============================================")
-		//fmt.Printf("%v\n", tweet)
+		fmt.Println("=============================================")
+		fmt.Printf("%v\n", tweet)
 		fmt.Println("=============================================")
 		fmt.Printf("==>exec\n")
 		cmd := strings.Replace(tweet.FullText, t.hashtag, "", -1)
