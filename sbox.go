@@ -24,7 +24,7 @@ func execOnContainer(ctx context.Context, cmd string) (string, error) {
 
 func quoteTweet(ctx context.Context, t *Twitter) error {
 	fmt.Printf("twitter.search now=%s\tlatestId=%v\n", time.Now(), t.savedata.LatestId)
-	tweets, err := t.search()
+	tweets, err := t.search(0)
 	if err != nil {
 		fmt.Printf("search error:%v\n", err)
 	}

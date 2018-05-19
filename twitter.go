@@ -88,9 +88,11 @@ func (t *Twitter) writeSavedata() error {
 	return nil
 }
 
-func (t *Twitter) search() ([]anaconda.Tweet, error) {
+func (t *Twitter) search(latestId int64) ([]anaconda.Tweet, error) {
 	v := url.Values{}
-	if t.savedata.LatestId != 0 {
+	if latestId != 0 {
+		v.Set("since_id", fmt.Sprintf("%d", latestId+1))
+	} else if t.savedata.LatestId != 0 {
 		v.Set("since_id", fmt.Sprintf("%d", t.savedata.LatestId+1))
 	}
 	v.Set("include_entities", "true")
