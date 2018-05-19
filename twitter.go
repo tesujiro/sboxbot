@@ -33,13 +33,13 @@ func getTwitterApi(prefix string) *anaconda.TwitterApi {
 		}
 		fmt.Printf("%v=%v\n", v, os.Getenv(v))
 	}
-	anaconda.SetConsumerKey(os.Getenv("TWITTER_CONSUMER_KEY"))
-	anaconda.SetConsumerSecret(os.Getenv("TWITTER_CONSUMER_SECRET"))
-	api := anaconda.NewTwitterApi(os.Getenv("TWITTER_ACCESS_TOKEN"), os.Getenv("TWITTER_ACCESS_TOKEN_SECRET"))
+	anaconda.SetConsumerKey(os.Getenv(prefix + "TWITTER_CONSUMER_KEY"))
+	anaconda.SetConsumerSecret(os.Getenv(prefix + "TWITTER_CONSUMER_SECRET"))
+	api := anaconda.NewTwitterApi(os.Getenv(prefix+"TWITTER_ACCESS_TOKEN"), os.Getenv(prefix+"TWITTER_ACCESS_TOKEN_SECRET"))
 	return api
 }
 
-func newTwitter() *Twitter {
+func newTwitter(prefix string) *Twitter {
 	v := "HASHTAG"
 	hash := os.Getenv(v)
 	if hash == "" {
@@ -50,7 +50,7 @@ func newTwitter() *Twitter {
 
 	savefile := filepath.Join("./volume", hash+".json") //TODO:
 	t := Twitter{
-		api:      getTwitterApi(""),
+		api:      getTwitterApi(prefix),
 		hashtag:  hash,
 		savefile: savefile,
 		//startedAt: time.Now(),
@@ -106,12 +106,11 @@ func (t *Twitter) getTweet(id int64) (anaconda.Tweet, error) {
 	return t.api.GetTweet(id, v)
 }
 
-func (t *Twitter) post(s string, v url.Values) error {
+func (t *Twitter) post(s string, v url.Values) (anaconda.Tweet, error) {
 	if s == "" {
 		s = "nil"
 	}
-	_, err := t.api.PostTweet(s, v)
-	return err
+	return t.api.PostTweet(s, v)
 }
 
 func (t *Twitter) retweet(id int64, trimUser bool) error {
@@ -119,7 +118,7 @@ func (t *Twitter) retweet(id int64, trimUser bool) error {
 	return err
 }
 
-func (t *Twitter) quotedTweet(result string, tweet *anaconda.Tweet) error {
+func (t *Twitter) quotedTweet(result string, tweet *anaconda.Tweet) (anaconda.Tweet, error) {
 	//status := fmt.Sprintf("@%s\n%s%s\nhttps://twitter.com/%s/status/%d", tweet.User.ScreenName, result, t.hashtag, tweet.User.ScreenName, tweet.Id)
 	header := fmt.Sprintf("@%s\n", tweet.User.ScreenName)
 	footer := fmt.Sprintf("%s\nhttps://twitter.com/%s/status/%d", t.hashtag, tweet.User.ScreenName, tweet.Id)

@@ -30,15 +30,31 @@ func quoteTweet(ctx context.Context, t *Twitter) error {
 	}
 	for i, tweet := range tweets {
 		fmt.Printf("key:%d\tid:%d\tCreatedAt:%s\tUser.ScreenName:%s\n", i, tweet.Id, tweet.CreatedAt, tweet.User.ScreenName)
+		//Save LatestId
+		if t.savedata.LatestId < tweet.Id {
+			t.savedata.LatestId = tweet.Id
+			fmt.Printf("t.savedata.LatestId =%d\n", t.savedata.LatestId)
+			if err := t.writeSavedata(); err != nil {
+				return err
+			}
+		}
 		//tweet = t.getTweet(tweet.Id)
 		fmt.Println("=============================================")
 		fmt.Println(tweet.FullText)
 		//fmt.Println("=============================================")
 		//fmt.Println(tweet.Entities)
 		fmt.Println("=============================================")
-		fmt.Printf("%v\n", tweet)
+		fmt.Printf("%+v\n", tweet)
 		fmt.Println("=============================================")
-		fmt.Printf("==>exec\n")
+		fmt.Printf("InReplyToUserID:%v\n", tweet.InReplyToUserID)
+		fmt.Printf("InReplyToStatusID:%v\n", tweet.InReplyToStatusID)
+		fmt.Printf("QuotedStatusID:%v\n", tweet.QuotedStatusID)
+		fmt.Println("=============================================")
+		//
+		if tweet.QuotedStatusID != 0 {
+			fmt.Printf("skip because of QuotedStatusID:%v\n", tweet.QuotedStatusID)
+			continue
+		}
 		addLineBreak := func(s string) string {
 			if len(s) > 0 && s[len(s)-1] != '\n' {
 				return s + "\n"
@@ -48,34 +64,29 @@ func quoteTweet(ctx context.Context, t *Twitter) error {
 		}
 		cmd := strings.Replace(tweet.FullText, t.hashtag, "", -1)
 		cmd = addLineBreak(cmd)
-		if strings.Replace(cmd, " \t\n", "", -1) != "" {
-
-			ctxWithTimeout, cancel := context.WithTimeout(ctx, 10*time.Second)
-			defer cancel()
-			result, err := execOnContainer(ctxWithTimeout, cmd)
-			if err != nil {
-				result = fmt.Sprintf("%v\n%v\n", result, err)
-			}
-			if err := t.quotedTweet(result, &tweet); err != nil {
-				return err
-			}
+		if strings.Replace(cmd, " \t\n", "", -1) == "" {
+			fmt.Printf("skip because of cmd null\n")
+			continue
 		}
 
-		//Save LatestId
-		if t.savedata.LatestId < tweet.Id {
-			t.savedata.LatestId = tweet.Id
-			fmt.Printf("t.savedata.LatestId =%d\n", t.savedata.LatestId)
-			if err := t.writeSavedata(); err != nil {
-				return err
-			}
+		fmt.Printf("==>execute command\n")
+		ctxWithTimeout, cancel := context.WithTimeout(ctx, 10*time.Second)
+		defer cancel()
+		result, err := execOnContainer(ctxWithTimeout, cmd)
+		if err != nil {
+			result = fmt.Sprintf("%v\n%v\n", result, err)
 		}
+		if _, err := t.quotedTweet(result, &tweet); err != nil {
+			return err
+		}
+
 	}
 	return nil
 }
 
 func run(ctx context.Context) error {
 
-	t := newTwitter()
+	t := newTwitter("")
 	//tick := time.NewTicker(time.Second * time.Duration(60)).C
 	tick := time.NewTicker(time.Second * time.Duration(10)).C
 
