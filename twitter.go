@@ -25,7 +25,14 @@ type Twitter struct {
 	savedata *savedata
 }
 
-func GetTwitterApi() *anaconda.TwitterApi {
+func getTwitterApi(prefix string) *anaconda.TwitterApi {
+	for _, v := range []string{"TWITTER_CONSUMER_KEY", "TWITTER_CONSUMER_SECRET", "TWITTER_ACCESS_TOKEN", "TWITTER_ACCESS_TOKEN_SECRET"} {
+		if os.Getenv(prefix+v) == "" {
+			fmt.Printf("No Environment Variable (%v) set.\n", prefix+v)
+			os.Exit(1)
+		}
+		fmt.Printf("%v=%v\n", v, os.Getenv(v))
+	}
 	anaconda.SetConsumerKey(os.Getenv("TWITTER_CONSUMER_KEY"))
 	anaconda.SetConsumerSecret(os.Getenv("TWITTER_CONSUMER_SECRET"))
 	api := anaconda.NewTwitterApi(os.Getenv("TWITTER_ACCESS_TOKEN"), os.Getenv("TWITTER_ACCESS_TOKEN_SECRET"))
@@ -33,18 +40,17 @@ func GetTwitterApi() *anaconda.TwitterApi {
 }
 
 func newTwitter() *Twitter {
-	for _, v := range []string{"HASHTAG", "TWITTER_CONSUMER_KEY", "TWITTER_CONSUMER_SECRET", "TWITTER_ACCESS_TOKEN", "TWITTER_ACCESS_TOKEN_SECRET"} {
-		fmt.Printf("%v=%v\n", v, os.Getenv(v))
-	}
-	hash := os.Getenv("HASHTAG")
+	v := "HASHTAG"
+	hash := os.Getenv(v)
 	if hash == "" {
-		fmt.Println("No Environment Variable (HASHTAG,TWITTER_CONSUMER_KEY,TWITTER_CONSUMER_SECRET,TWITTER_ACCESS_TOKEN,TWITTER_ACCESS_TOKEN_SECRET)")
+		fmt.Printf("No Environment Variable (%v) set.\n", v)
 		os.Exit(1)
 	}
+	fmt.Printf("%v=%v\n", v, os.Getenv(v))
 
 	savefile := filepath.Join("./volume", hash+".json") //TODO:
 	t := Twitter{
-		api:      GetTwitterApi(),
+		api:      getTwitterApi(""),
 		hashtag:  hash,
 		savefile: savefile,
 		//startedAt: time.Now(),
@@ -123,12 +129,12 @@ func (t *Twitter) quotedTweet(result string, tweet *anaconda.Tweet) error {
 	status := header + result + footer
 	fmt.Printf("len(status)=%d\n", len(status))
 	v := url.Values{}
-	//v.Add("quoted_status_id", fmt.Sprintf("%d", tweet.Id))
-	//v.Add("quoted_status_id_str", tweet.IdStr)
-	v.Add("in_reply_to_user_id", fmt.Sprintf("%d", tweet.User.Id))
-	v.Add("in_reply_to_user_id_str", tweet.User.IdStr)
-	v.Add("in_reply_to_status_id", fmt.Sprintf("%d", tweet.Id))
-	v.Add("in_reply_to_status_id_str", tweet.User.IdStr)
+	//v.Add("quoted_status_id", fmt.Sprintf("%d", tweet.Id))  // remove because automatically adding by twitter server
+	//v.Add("quoted_status_id_str", tweet.IdStr)  // remove because automatically adding by twitter server
+	//v.Add("in_reply_to_user_id", fmt.Sprintf("%d", tweet.User.Id))
+	//v.Add("in_reply_to_user_id_str", tweet.User.IdStr)
+	//v.Add("in_reply_to_status_id", fmt.Sprintf("%d", tweet.Id))
+	//v.Add("in_reply_to_status_id_str", tweet.User.IdStr)
 
 	fmt.Println("=============================================")
 	fmt.Printf("%s\n", status)
