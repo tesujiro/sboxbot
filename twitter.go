@@ -102,6 +102,16 @@ func (t *Twitter) search(latestId int64) ([]anaconda.Tweet, error) {
 	return searchResult.Statuses, err
 }
 
+func (t *Twitter) getMentionsTimeline(latestId int64) ([]anaconda.Tweet, error) {
+	v := url.Values{}
+	if latestId != 0 {
+		v.Set("since_id", fmt.Sprintf("%d", latestId+1))
+	}
+	v.Set("include_entities", "true")
+	//return t.api.GetRetweetsOfMe(v)
+	return t.api.GetMentionsTimeline(v)
+}
+
 func (t *Twitter) getTweet(id int64) (anaconda.Tweet, error) {
 	v := url.Values{}
 	//v.Set("include_entities", "true")
@@ -130,8 +140,8 @@ func (t *Twitter) quotedTweet(result string, tweet *anaconda.Tweet) (anaconda.Tw
 	status := header + result + footer
 	fmt.Printf("len(status)=%d\n", len(status))
 	v := url.Values{}
-	//v.Add("quoted_status_id", fmt.Sprintf("%d", tweet.Id))  // remove because automatically adding by twitter server
-	//v.Add("quoted_status_id_str", tweet.IdStr)  // remove because automatically adding by twitter server
+	v.Add("quoted_status_id", fmt.Sprintf("%d", tweet.Id))
+	v.Add("quoted_status_id_str", tweet.IdStr)
 	//v.Add("in_reply_to_user_id", fmt.Sprintf("%d", tweet.User.Id))
 	//v.Add("in_reply_to_user_id_str", tweet.User.IdStr)
 	//v.Add("in_reply_to_status_id", fmt.Sprintf("%d", tweet.Id))
