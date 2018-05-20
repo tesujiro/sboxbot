@@ -40,10 +40,7 @@ delete_secret:
 	kubectl delete secret twitter-apikey
 	
 test:
-	#go test ./
-	#go test sbox.go  sbox_test.go twitter.go docker.go 
-	go build -o sbox_tester sbox_tester.go twitter.go
-	./sbox_tester
+	go test -v ./
 
 clean:
 	-docker rmi $(MODULE) localhost:5000/$(MODULE)
