@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/url"
+	"regexp"
 	"testing"
 	"time"
 
@@ -22,13 +23,15 @@ func TestRun(t *testing.T) {
 	now := time.Now()
 	//go run(context.Background())
 	tw := newTwitter("TEST_")
-	latestId := tw.savedata.LatestId
+	//latestId := tw.savedata.LatestId
+	latestId := int64(0)
 
 	cases := []struct {
 		commands string
 		expected string
 	}{
-		{commands: fmt.Sprintf("echo hello world! %v\n%v\n", now, tw.hashtag), expected: fmt.Sprintf("hello world! %v\n", now)},
+		{commands: fmt.Sprintf("echo hello world! %v\n%v\n", now, tw.hashtag), expected: "hello world!"},
+		{commands: fmt.Sprintf("echo こんにちは、世界！%v\n%v\n", now, tw.hashtag), expected: "こんにちは、世界！"},
 		//{commands: fmt.Sprintf("sleep\n"), expected: fmt.Sprintf("hello world!\n")},
 		//{commands: fmt.Sprintf("set\n")},
 		//{commands: fmt.Sprintf("while : \ndo\n:\ndone\n"), expected: fmt.Sprintf("exit error: context deadline exceeded")},
@@ -67,6 +70,11 @@ loop:
 				for i, chk := range checkQue {
 					if tweet.QuotedStatusID == chk.tweet.Id {
 						fmt.Printf("Found Quote for :%v\n", chk.tweet)
+						r := regexp.MustCompile(chk.expectedFullText_regex)
+						if !r.MatchString(tweet.FullText) {
+							t.Errorf("tweet text not match:%v\n%v\n", chk.expectedFullText_regex, tweet.FullText)
+						}
+
 						//if c.expected != "" && actual != c.expected {
 						//t.Errorf("got %v\nwant %v", actual, c.expected)
 						//}
