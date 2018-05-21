@@ -19,8 +19,6 @@ type check struct {
 	expectedFullText_regex string
 }
 
-//type testCase struct {
-//}
 type status struct {
 	command  string
 	expected string
@@ -34,18 +32,16 @@ func TestRun(t *testing.T) {
 	//latestId := tw.savedata.LatestId
 	latestId := int64(0)
 
-	/*
-		cases := []struct {
-			commands status
-			expected string
-		}{
-	*/
 	cases := []status{
 		{command: fmt.Sprintf("echo hello world! %v\n%v\n", now, tw.hashtag), expected: "hello world!"},
 		{command: fmt.Sprintf("echo こんにちは、世界！%v\n%v\n", now, tw.hashtag), expected: "こんにちは、世界！"},
 		//{command: fmt.Sprintf("echo no line break %v %v", now, tw.hashtag), expected: fmt.Sprintf("no line break")},
 		//{command: fmt.Sprintf("echo with no command line %v\n \t\n%v\n", now, tw.hashtag), expected: fmt.Sprintf("with no command line")},
 		//{command: fmt.Sprintf("echo hello long world! %v\nfor i in `seq 200`\ndo\n  echo i=$i\ndone\n%v\n", now, tw.hashtag), expected: fmt.Sprintf("i=20")},
+		{
+			command: fmt.Sprintf("echo hello 1! %v\n%v\n", now, tw.hashtag), expected: "hello 1!",
+			replies: []status{status{command: fmt.Sprintf("echo hello 2! %v\n%v\n", now, tw.hashtag), expected: "hello 2!"}},
+		},
 
 		//{commands: fmt.Sprintf("sleep\n"), expected: fmt.Sprintf("hello world!\n")},
 		//{commands: fmt.Sprintf("set\n")},
@@ -58,19 +54,25 @@ func TestRun(t *testing.T) {
 
 	checkQue := []check{}
 
-	var walk func([]status)
-	walk = func(cases []status) {
+	var walk func([]status, int64, int64)
+	walk = func(cases []status, replyUserId, replyStatusId int64) {
 		for _, c := range cases {
-			tweet, err := tw.post(c.command, url.Values{})
+			v := url.Values{}
+			v.Add("in_reply_to_user_id", fmt.Sprintf("%d", replyUserId))
+			v.Add("in_reply_to_user_id_str", fmt.Sprintf("%d", replyUserId))
+			v.Add("in_reply_to_status_id", fmt.Sprintf("%d", replyStatusId))
+			v.Add("in_reply_to_status_id_str", fmt.Sprintf("%d", replyStatusId))
+			tweet, err := tw.post(c.command, v)
 			if err != nil {
 				panic(err)
 			}
 			checkQue = append(checkQue, check{tweet: tweet, expectedFullText_regex: c.expected})
-			walk(c.replies)
+			fmt.Printf("add tweet(ID:%v) to checkQue\n", tweet.Id)
+			walk(c.replies, tweet.User.Id, tweet.Id)
 		}
 	}
 	// Post Test Tweets
-	walk(cases)
+	walk(cases, int64(0), int64(0))
 
 	// Check Tweets
 	tick := time.NewTicker(time.Second * time.Duration(10)).C
@@ -103,9 +105,9 @@ loop:
 						break
 					}
 				}
-				if latestId < tweet.Id {
-					latestId = tweet.Id
-				}
+				//if latestId < tweet.Id {
+				//latestId = tweet.Id
+				//}
 			}
 			if len(checkQue) == 0 {
 				break loop

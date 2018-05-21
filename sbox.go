@@ -7,17 +7,21 @@ import (
 	"runtime"
 	"strings"
 	"time"
+
+	"github.com/ChimeraCoder/anaconda"
 )
 
-func execOnContainer(ctx context.Context, cmd string) (string, error) {
+func execOnContainer(ctx context.Context, commands []string) (string, error) {
 	d := newDockerContainer()
 	if err := d.run(ctx); err != nil {
 		return "", err
 	}
-	if err := d.exec(cmd); err != nil {
-		result, _ := d.exit()
-		//result += fmt.Sprintf("%v", err)
-		return result, err
+	for _, cmd := range commands {
+		if err := d.exec(cmd); err != nil {
+			result, _ := d.exit()
+			//result += fmt.Sprintf("%v", err)
+			return result, err
+		}
 	}
 	return d.exit()
 }
@@ -50,29 +54,50 @@ func quoteTweet(ctx context.Context, t *Twitter) error {
 		fmt.Printf("InReplyToStatusID:%v\n", tweet.InReplyToStatusID)
 		fmt.Printf("QuotedStatusID:%v\n", tweet.QuotedStatusID)
 		fmt.Println("=============================================")
-		//
-		if tweet.QuotedStatusID != 0 {
-			fmt.Printf("skip because of QuotedStatusID:%v\n", tweet.QuotedStatusID)
-			continue
-		}
-		addLineBreak := func(s string) string {
-			if len(s) > 0 && s[len(s)-1] != '\n' {
-				return s + "\n"
+
+		var walk func(anaconda.Tweet) ([]string, error)
+		walk = func(tweet anaconda.Tweet) ([]string, error) {
+
+			command := ""
+			if tweet.QuotedStatusID != 0 {
+				fmt.Printf("skip because of QuotedStatusID:%v\n", tweet.QuotedStatusID)
+				//continue
 			} else {
-				return s
+				addLineBreak := func(s string) string {
+					if len(s) > 0 && s[len(s)-1] != '\n' {
+						return s + "\n"
+					} else {
+						return s
+					}
+				}
+				text := strings.Replace(tweet.FullText, t.hashtag, "", -1)
+				text = addLineBreak(text)
+				if strings.Replace(text, " \t\n", "", -1) == "" {
+					fmt.Printf("skip because of command null\n")
+				} else {
+					command = text
+				}
+			}
+			if tweet.InReplyToStatusID == 0 {
+				return []string{command}, nil
+			} else {
+				reply, err := t.getTweet(tweet.InReplyToStatusID)
+				if err != nil {
+					return []string{}, err
+				}
+				commands, err := walk(reply)
+				return append(commands, command), err
 			}
 		}
-		cmd := strings.Replace(tweet.FullText, t.hashtag, "", -1)
-		cmd = addLineBreak(cmd)
-		if strings.Replace(cmd, " \t\n", "", -1) == "" {
-			fmt.Printf("skip because of cmd null\n")
-			continue
+		commands, err := walk(tweet)
+		if err != nil {
+			return err
 		}
 
 		fmt.Printf("==>execute command\n")
 		ctxWithTimeout, cancel := context.WithTimeout(ctx, 10*time.Second)
 		defer cancel()
-		result, err := execOnContainer(ctxWithTimeout, cmd)
+		result, err := execOnContainer(ctxWithTimeout, commands)
 		if err != nil {
 			result = fmt.Sprintf("%v\n%v\n", result, err)
 		}
