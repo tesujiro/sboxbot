@@ -19,6 +19,14 @@ type check struct {
 	expectedFullText_regex string
 }
 
+//type testCase struct {
+//}
+type status struct {
+	command  string
+	expected string
+	replies  []status
+}
+
 func TestRun(t *testing.T) {
 	now := time.Now()
 	//go run(context.Background())
@@ -26,15 +34,19 @@ func TestRun(t *testing.T) {
 	//latestId := tw.savedata.LatestId
 	latestId := int64(0)
 
-	cases := []struct {
-		commands string
-		expected string
-	}{
-		{commands: fmt.Sprintf("echo hello world! %v\n%v\n", now, tw.hashtag), expected: "hello world!"},
-		{commands: fmt.Sprintf("echo こんにちは、世界！%v\n%v\n", now, tw.hashtag), expected: "こんにちは、世界！"},
-		{commands: fmt.Sprintf("echo no line break %v %v", now, tw.hashtag), expected: fmt.Sprintf("no line break")},
-		{commands: fmt.Sprintf("echo with no command line %v\n \t\n%v\n", now, tw.hashtag), expected: fmt.Sprintf("with no command line")},
-		{commands: fmt.Sprintf("echo hello long world! %v\nfor i in `seq 200`\ndo\n  echo i=$i\ndone\n%v\n", now, tw.hashtag), expected: fmt.Sprintf("i=20")},
+	/*
+		cases := []struct {
+			commands status
+			expected string
+		}{
+	*/
+	cases := []status{
+		{command: fmt.Sprintf("echo hello world! %v\n%v\n", now, tw.hashtag), expected: "hello world!"},
+		{command: fmt.Sprintf("echo こんにちは、世界！%v\n%v\n", now, tw.hashtag), expected: "こんにちは、世界！"},
+		//{command: fmt.Sprintf("echo no line break %v %v", now, tw.hashtag), expected: fmt.Sprintf("no line break")},
+		//{command: fmt.Sprintf("echo with no command line %v\n \t\n%v\n", now, tw.hashtag), expected: fmt.Sprintf("with no command line")},
+		//{command: fmt.Sprintf("echo hello long world! %v\nfor i in `seq 200`\ndo\n  echo i=$i\ndone\n%v\n", now, tw.hashtag), expected: fmt.Sprintf("i=20")},
+
 		//{commands: fmt.Sprintf("sleep\n"), expected: fmt.Sprintf("hello world!\n")},
 		//{commands: fmt.Sprintf("set\n")},
 		//{commands: fmt.Sprintf("while : \ndo\n:\ndone\n"), expected: fmt.Sprintf("exit error: context deadline exceeded")},
@@ -46,14 +58,19 @@ func TestRun(t *testing.T) {
 
 	checkQue := []check{}
 
-	// Post Test Tweets
-	for _, c := range cases {
-		tweet, err := tw.post(c.commands, url.Values{})
-		if err != nil {
-			panic(err)
+	var walk func([]status)
+	walk = func(cases []status) {
+		for _, c := range cases {
+			tweet, err := tw.post(c.command, url.Values{})
+			if err != nil {
+				panic(err)
+			}
+			checkQue = append(checkQue, check{tweet: tweet, expectedFullText_regex: c.expected})
+			walk(c.replies)
 		}
-		checkQue = append(checkQue, check{tweet: tweet, expectedFullText_regex: c.expected})
 	}
+	// Post Test Tweets
+	walk(cases)
 
 	// Check Tweets
 	tick := time.NewTicker(time.Second * time.Duration(10)).C
