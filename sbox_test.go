@@ -4,7 +4,10 @@ import (
 	"context"
 	"fmt"
 	"net/url"
+	"os"
+	"os/signal"
 	"regexp"
+	"syscall"
 	"testing"
 	"time"
 
@@ -53,6 +56,8 @@ func TestRun(t *testing.T) {
 	defer cancel()
 
 	checkQue := []check{}
+	my_tweet_list := []int64{}
+	bot_tweet_list := []int64{}
 
 	var walk func([]status, int64, int64)
 	walk = func(cases []status, replyUserId, replyStatusId int64) {
@@ -67,12 +72,27 @@ func TestRun(t *testing.T) {
 				panic(err)
 			}
 			checkQue = append(checkQue, check{tweet: tweet, expectedFullText_regex: c.expected})
+			my_tweet_list = append(my_tweet_list, tweet.Id)
 			fmt.Printf("add tweet(ID:%v) to checkQue\n", tweet.Id)
 			walk(c.replies, tweet.User.Id, tweet.Id)
 		}
 	}
 	// Post Test Tweets
 	walk(cases, int64(0), int64(0))
+	signal_chan := make(chan os.Signal, 1)
+	signal.Notify(signal_chan,
+		syscall.SIGHUP,
+		syscall.SIGINT,
+		syscall.SIGTERM,
+		syscall.SIGQUIT)
+	defer func() {
+		for _, id := range my_tweet_list {
+			fmt.Printf("delete my tweet ID: %v\n", id)
+			if _, err := tw.deleteTweet(id); err != nil {
+				fmt.Printf("delete error : %v\n", err)
+			}
+		}
+	}()
 
 	// Check Tweets
 	tick := time.NewTicker(time.Second * time.Duration(10)).C
@@ -81,8 +101,10 @@ loop:
 		select {
 		case <-ctx.Done():
 			break loop
+		case <-signal_chan:
+			break loop
 		case <-tick:
-			fmt.Printf("[test]twitter.search now=%s\tlatestId=%v\n", time.Now(), tw.savedata.LatestId)
+			fmt.Printf("[test]twitter.search now=%s\tlatestId=%v\n", time.Now(), latestId)
 			tweets, err := tw.getMentionsTimeline(latestId)
 			if err != nil {
 				panic(err)
@@ -91,7 +113,7 @@ loop:
 				fmt.Printf("Check Tweet Id:%v QuotedStatusID:%v\n", tweet.Id, tweet.QuotedStatusID)
 				for i, chk := range checkQue {
 					if tweet.QuotedStatusID == chk.tweet.Id {
-						fmt.Printf("Found Quote for :%v\n", chk.tweet)
+						fmt.Printf("Found Quote for Id:%v FullText:%v\n", chk.tweet.Id, chk.tweet.FullText)
 						r := regexp.MustCompile(chk.expectedFullText_regex)
 						if !r.MatchString(tweet.FullText) {
 							t.Errorf("tweet text not match:%v\n%v\n", chk.expectedFullText_regex, tweet.FullText)
@@ -102,6 +124,7 @@ loop:
 						//}
 						//remove chk from checkQue
 						checkQue = append(checkQue[:i], checkQue[i+1:]...)
+						bot_tweet_list = append(bot_tweet_list, tweet.Id)
 						break
 					}
 				}
@@ -115,7 +138,14 @@ loop:
 		}
 	}
 	for _, chk := range checkQue {
-		t.Errorf("Error Not Found Quote for :%v\n", chk.tweet)
+		t.Errorf("Error Not Found Quote for Id:%v FullText:%v\n", chk.tweet.Id, chk.tweet.FullText)
+	}
+	bot_tw := newTwitter("")
+	for _, id := range bot_tweet_list {
+		fmt.Printf("delete bot tweet ID: %v\n", id)
+		if _, err := bot_tw.deleteTweet(id); err != nil {
+			fmt.Printf("delete error : %v\n", err)
+		}
 	}
 	return
 }

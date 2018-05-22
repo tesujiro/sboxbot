@@ -130,6 +130,10 @@ func (t *Twitter) retweet(id int64, trimUser bool) error {
 	return err
 }
 
+func (t *Twitter) deleteTweet(id int64) (anaconda.Tweet, error) {
+	return t.api.DeleteTweet(id, true)
+}
+
 func (t *Twitter) quotedTweet(result string, tweet *anaconda.Tweet) (anaconda.Tweet, error) {
 	//status := fmt.Sprintf("@%s\n%s%s\nhttps://twitter.com/%s/status/%d", tweet.User.ScreenName, result, t.hashtag, tweet.User.ScreenName, tweet.Id)
 	header := fmt.Sprintf("@%s\n", tweet.User.ScreenName)
