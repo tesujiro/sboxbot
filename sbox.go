@@ -11,6 +11,9 @@ import (
 	"github.com/ChimeraCoder/anaconda"
 )
 
+const CHECK_TIMER = 10 * time.Second
+const CONTAINER_TIMER = 10 * time.Second
+
 func execOnContainer(ctx context.Context, commands []string) (string, error) {
 	d := newDockerContainer()
 	if err := d.run(ctx); err != nil {
@@ -95,7 +98,7 @@ func quoteTweet(ctx context.Context, t *Twitter) error {
 		}
 
 		fmt.Printf("==>execute command\n")
-		ctxWithTimeout, cancel := context.WithTimeout(ctx, 10*time.Second)
+		ctxWithTimeout, cancel := context.WithTimeout(ctx, CONTAINER_TIMER)
 		defer cancel()
 		result, err := execOnContainer(ctxWithTimeout, commands)
 		if err != nil {
@@ -112,8 +115,7 @@ func quoteTweet(ctx context.Context, t *Twitter) error {
 func run(ctx context.Context) error {
 
 	t := newTwitter("")
-	//tick := time.NewTicker(time.Second * time.Duration(60)).C
-	tick := time.NewTicker(time.Second * time.Duration(10)).C
+	tick := time.NewTicker(CHECK_TIMER).C
 
 	if err := quoteTweet(ctx, t); err != nil {
 		fmt.Printf("quoteTweet error:%v\n", err)

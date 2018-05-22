@@ -15,7 +15,7 @@ import (
 )
 
 const MAX_TEST_TIME = 60 * time.Second
-const CHECK_TIMER = 10 * time.Second
+const TEST_LOOP_TIMER = 10 * time.Second
 
 type check struct {
 	tweet                  anaconda.Tweet
@@ -41,10 +41,10 @@ func TestRun(t *testing.T) {
 		//{command: fmt.Sprintf("echo no line break %v %v", now, tw.hashtag), expected: fmt.Sprintf("no line break")},
 		//{command: fmt.Sprintf("echo with no command line %v\n \t\n%v\n", now, tw.hashtag), expected: fmt.Sprintf("with no command line")},
 		//{command: fmt.Sprintf("echo hello long world! %v\nfor i in `seq 200`\ndo\n  echo i=$i\ndone\n%v\n", now, tw.hashtag), expected: fmt.Sprintf("i=20")},
-		{
-			command: fmt.Sprintf("echo hello 1! %v\n%v\n", now, tw.hashtag), expected: "hello 1!",
-			replies: []status{status{command: fmt.Sprintf("echo hello 2! %v\n%v\n", now, tw.hashtag), expected: "hello 2!"}},
-		},
+		//{
+		//command: fmt.Sprintf("echo hello 1! %v\n%v\n", now, tw.hashtag), expected: "hello 1!",
+		//replies: []status{status{command: fmt.Sprintf("echo hello 2! %v\n%v\n", now, tw.hashtag), expected: "hello 2!"}},
+		//},
 
 		//{commands: fmt.Sprintf("sleep\n"), expected: fmt.Sprintf("hello world!\n")},
 		//{commands: fmt.Sprintf("set\n")},
@@ -52,7 +52,7 @@ func TestRun(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	ctx, cancel := context.WithTimeout(ctx, 600*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, MAX_TEST_TIME)
 	defer cancel()
 
 	checkQue := []check{}
@@ -95,7 +95,7 @@ func TestRun(t *testing.T) {
 	}()
 
 	// Check Tweets
-	tick := time.NewTicker(time.Second * time.Duration(10)).C
+	tick := time.NewTicker(TEST_LOOP_TIMER).C
 loop:
 	for {
 		select {
