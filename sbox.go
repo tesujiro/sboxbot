@@ -13,8 +13,17 @@ import (
 
 const CHECK_TIMER = 10 * time.Second
 const CONTAINER_TIMER = 10 * time.Second
+const TWEET_TIMER = 1 * time.Second
 
-func execOnContainer(ctx context.Context, commands []string) (string, error) {
+type sbox struct {
+	twitter *Twitter
+}
+
+func new() *sbox {
+	return &sbox{twitter: newTwitter("")}
+}
+
+func (s *sbox) execOnContainer(ctx context.Context, commands []string) (string, error) {
 	d := newDockerContainer()
 	if err := d.run(ctx); err != nil {
 		return "", err
@@ -29,23 +38,65 @@ func execOnContainer(ctx context.Context, commands []string) (string, error) {
 	return d.exit()
 }
 
-func quoteTweet(ctx context.Context, t *Twitter) error {
-	fmt.Printf("twitter.search now=%s\tlatestId=%v\n", time.Now(), t.savedata.LatestId)
-	tweets, err := t.search(0)
+func (s *sbox) getCommand(text string) (string, error) {
+	addLineBreak := func(s string) string {
+		if len(s) > 0 && s[len(s)-1] != '\n' {
+			return s + "\n"
+		} else {
+			return s
+		}
+	}
+	text = strings.Replace(text, s.twitter.hashtag, "", -1)
+	text = addLineBreak(text)
+	if strings.Replace(text, " \t\n", "", -1) == "" {
+		return "", nil
+	}
+	return text, nil
+}
+
+func (s *sbox) upTree(tweet anaconda.Tweet) ([]string, error) {
+	if tweet.QuotedStatusID != 0 {
+		fmt.Printf("skip because of QuotedStatusID:%v\n", tweet.QuotedStatusID)
+		return []string{}, nil
+	}
+
+	// extract command from TweetText
+	command, err := s.getCommand(tweet.FullText)
+	if err != nil {
+		return []string{command}, err
+	}
+
+	if tweet.InReplyToStatusID == 0 {
+		// Top tweet
+		return []string{command}, nil
+	} else {
+		// Intermediate tweet
+		reply, err := s.twitter.getTweet(tweet.InReplyToStatusID)
+		if err != nil {
+			return []string{}, err
+		}
+		commands, err := s.upTree(reply)
+		return append(commands, command), err
+	}
+}
+
+func (s *sbox) run(ctx context.Context) error {
+	fmt.Printf("twitter.search now=%s\tlatestId=%v\n", time.Now(), s.twitter.savedata.LatestId)
+	tweets, err := s.twitter.search(0)
 	if err != nil {
 		fmt.Printf("search error:%v\n", err)
 	}
 	for i, tweet := range tweets {
 		fmt.Printf("key:%d\tid:%d\tCreatedAt:%s\tUser.ScreenName:%s\n", i, tweet.Id, tweet.CreatedAt, tweet.User.ScreenName)
 		//Save LatestId
-		if t.savedata.LatestId < tweet.Id {
-			t.savedata.LatestId = tweet.Id
-			fmt.Printf("t.savedata.LatestId =%d\n", t.savedata.LatestId)
-			if err := t.writeSavedata(); err != nil {
+		if s.twitter.savedata.LatestId < tweet.Id {
+			s.twitter.savedata.LatestId = tweet.Id
+			fmt.Printf("s.twitter.savedata.LatestId =%d\n", s.twitter.savedata.LatestId)
+			if err := s.twitter.writeSavedata(); err != nil {
 				return err
 			}
 		}
-		//tweet = t.getTweet(tweet.Id)
+		//tweet = s.twitter.getTweet(tweet.Id)
 		fmt.Println("=============================================")
 		fmt.Println(tweet.FullText)
 		//fmt.Println("=============================================")
@@ -58,41 +109,7 @@ func quoteTweet(ctx context.Context, t *Twitter) error {
 		fmt.Printf("QuotedStatusID:%v\n", tweet.QuotedStatusID)
 		fmt.Println("=============================================")
 
-		var walk func(anaconda.Tweet) ([]string, error)
-		walk = func(tweet anaconda.Tweet) ([]string, error) {
-
-			command := ""
-			if tweet.QuotedStatusID != 0 {
-				fmt.Printf("skip because of QuotedStatusID:%v\n", tweet.QuotedStatusID)
-				//continue
-			} else {
-				addLineBreak := func(s string) string {
-					if len(s) > 0 && s[len(s)-1] != '\n' {
-						return s + "\n"
-					} else {
-						return s
-					}
-				}
-				text := strings.Replace(tweet.FullText, t.hashtag, "", -1)
-				text = addLineBreak(text)
-				if strings.Replace(text, " \t\n", "", -1) == "" {
-					fmt.Printf("skip because of command null\n")
-				} else {
-					command = text
-				}
-			}
-			if tweet.InReplyToStatusID == 0 {
-				return []string{command}, nil
-			} else {
-				reply, err := t.getTweet(tweet.InReplyToStatusID)
-				if err != nil {
-					return []string{}, err
-				}
-				commands, err := walk(reply)
-				return append(commands, command), err
-			}
-		}
-		commands, err := walk(tweet)
+		commands, err := s.upTree(tweet)
 		if err != nil {
 			return err
 		}
@@ -100,11 +117,11 @@ func quoteTweet(ctx context.Context, t *Twitter) error {
 		fmt.Printf("==>execute command\n")
 		ctxWithTimeout, cancel := context.WithTimeout(ctx, CONTAINER_TIMER)
 		defer cancel()
-		result, err := execOnContainer(ctxWithTimeout, commands)
+		result, err := s.execOnContainer(ctxWithTimeout, commands)
 		if err != nil {
 			result = fmt.Sprintf("%v\n%v\n", result, err)
 		}
-		if _, err := t.quotedTweet(result, &tweet); err != nil {
+		if _, err := s.twitter.quotedTweet(result, &tweet); err != nil {
 			return err
 		}
 
@@ -114,10 +131,10 @@ func quoteTweet(ctx context.Context, t *Twitter) error {
 
 func run(ctx context.Context) error {
 
-	t := newTwitter("")
+	s := new()
 	tick := time.NewTicker(CHECK_TIMER).C
 
-	if err := quoteTweet(ctx, t); err != nil {
+	if err := s.run(ctx); err != nil {
 		fmt.Printf("quoteTweet error:%v\n", err)
 	}
 mainloop:
@@ -126,7 +143,7 @@ mainloop:
 		case <-ctx.Done():
 			break mainloop
 		case <-tick:
-			if err := quoteTweet(ctx, t); err != nil {
+			if err := s.run(ctx); err != nil {
 				fmt.Printf("quoteTweet error:%v\n", err)
 			}
 		}
