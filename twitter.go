@@ -27,11 +27,12 @@ type Twitter struct {
 
 func getTwitterApi(prefix string) *anaconda.TwitterApi {
 	for _, v := range []string{"TWITTER_CONSUMER_KEY", "TWITTER_CONSUMER_SECRET", "TWITTER_ACCESS_TOKEN", "TWITTER_ACCESS_TOKEN_SECRET"} {
-		if os.Getenv(prefix+v) == "" {
-			fmt.Printf("No Environment Variable (%v) set.\n", prefix+v)
+		env := prefix + v
+		if os.Getenv(env) == "" {
+			fmt.Printf("No Environment Variable (%v) set.\n", env)
 			os.Exit(1)
 		}
-		fmt.Printf("%v=%v\n", v, os.Getenv(v))
+		fmt.Printf("%v=%v\n", env, os.Getenv(env))
 	}
 	anaconda.SetConsumerKey(os.Getenv(prefix + "TWITTER_CONSUMER_KEY"))
 	anaconda.SetConsumerSecret(os.Getenv(prefix + "TWITTER_CONSUMER_SECRET"))
