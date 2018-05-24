@@ -107,6 +107,7 @@ loop:
 			break loop
 		case <-tick:
 			fmt.Printf("[test]twitter.search now=%s\tlatestId=%v\n", time.Now(), latestId)
+			found := 0
 			for i, chk := range checkQue {
 				fmt.Printf("Check Tweet Id:%v QuotedStatusID:%v\n", chk.tweet.Id, chk.tweet.QuotedStatusID)
 				quotes, err := tw.searchQuotedTweet(chk.tweet)
@@ -117,7 +118,8 @@ loop:
 					r := regexp.MustCompile(chk.expectedFullText_regex)
 					if r.MatchString(quote.FullText) {
 						fmt.Printf("==> match index:%v\n", j)
-						checkQue = append(checkQue[:i], checkQue[i+1:]...)
+						checkQue = append(checkQue[:(i-found)], checkQue[i-found+1:]...)
+						found++
 						bot_tweet_list = append(bot_tweet_list, quote.Id)
 						break
 					}
