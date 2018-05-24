@@ -56,6 +56,7 @@ func TestRun(t *testing.T) {
 	defer cancel()
 
 	checkQue := []check{}
+	ngQue := []check{}
 	my_tweet_list := []int64{}
 	bot_tweet_list := []int64{}
 
@@ -108,28 +109,26 @@ loop:
 			fmt.Printf("[test]twitter.search now=%s\tlatestId=%v\n", time.Now(), latestId)
 			for i, chk := range checkQue {
 				fmt.Printf("Check Tweet Id:%v QuotedStatusID:%v\n", chk.tweet.Id, chk.tweet.QuotedStatusID)
-				tweets, err := tw.searchQuotedTweet(chk.tweet)
+				quotes, err := tw.searchQuotedTweet(chk.tweet)
 				if err != nil {
 					panic(err)
 				}
-				for _, quote := range tweets {
-					fmt.Printf("Found Quote for Id:%v FullText:%v\n", quote.Id, quote.FullText)
+				for j, quote := range quotes {
 					r := regexp.MustCompile(chk.expectedFullText_regex)
-					if !r.MatchString(quote.FullText) {
-						t.Errorf("tweet text not match:%v\n%v\n", chk.expectedFullText_regex, quote.FullText)
-						continue
+					if r.MatchString(quote.FullText) {
+						fmt.Printf("==> match index:%v\n", j)
+						checkQue = append(checkQue[:i], checkQue[i+1:]...)
+						bot_tweet_list = append(bot_tweet_list, quote.Id)
+						break
 					}
-					checkQue = append(checkQue[:i], checkQue[i+1:]...)
-					bot_tweet_list = append(bot_tweet_list, quote.Id)
-					break
 				}
-				if len(checkQue) == 0 {
-					break loop
-				}
+			}
+			if len(checkQue) == 0 {
+				break loop
 			}
 		}
 	}
-	for _, chk := range checkQue {
+	for _, chk := range ngQue {
 		t.Errorf("Error Not Found Quote for Id:%v FullText:%v\n", chk.tweet.Id, chk.tweet.FullText)
 	}
 	bot_tw := newTwitter("")
