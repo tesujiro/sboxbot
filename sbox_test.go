@@ -14,7 +14,7 @@ import (
 	"github.com/ChimeraCoder/anaconda"
 )
 
-const MAX_TEST_TIME = 60 * time.Second
+const MAX_TEST_TIME = 1800 * time.Second
 const TEST_LOOP_TIMER = 10 * time.Second
 
 type check struct {
@@ -74,6 +74,7 @@ func TestRun(t *testing.T) {
 			checkQue = append(checkQue, check{tweet: tweet, expectedFullText_regex: c.expected})
 			my_tweet_list = append(my_tweet_list, tweet.Id)
 			fmt.Printf("add tweet(ID:%v) to checkQue\n", tweet.Id)
+			//time.Sleep(TEST_LOOP_TIMER)
 			walk(c.replies, tweet.User.Id, tweet.Id)
 		}
 	}
@@ -105,35 +106,26 @@ loop:
 			break loop
 		case <-tick:
 			fmt.Printf("[test]twitter.search now=%s\tlatestId=%v\n", time.Now(), latestId)
-			tweets, err := tw.getMentionsTimeline(latestId)
-			if err != nil {
-				panic(err)
-			}
-			for _, tweet := range tweets {
-				fmt.Printf("Check Tweet Id:%v QuotedStatusID:%v\n", tweet.Id, tweet.QuotedStatusID)
-				for i, chk := range checkQue {
-					if tweet.QuotedStatusID == chk.tweet.Id {
-						fmt.Printf("Found Quote for Id:%v FullText:%v\n", chk.tweet.Id, chk.tweet.FullText)
-						r := regexp.MustCompile(chk.expectedFullText_regex)
-						if !r.MatchString(tweet.FullText) {
-							t.Errorf("tweet text not match:%v\n%v\n", chk.expectedFullText_regex, tweet.FullText)
-						}
-
-						//if c.expected != "" && actual != c.expected {
-						//t.Errorf("got %v\nwant %v", actual, c.expected)
-						//}
-						//remove chk from checkQue
-						checkQue = append(checkQue[:i], checkQue[i+1:]...)
-						bot_tweet_list = append(bot_tweet_list, tweet.Id)
-						break
-					}
+			for i, chk := range checkQue {
+				fmt.Printf("Check Tweet Id:%v QuotedStatusID:%v\n", chk.tweet.Id, chk.tweet.QuotedStatusID)
+				tweets, err := tw.searchQuotedTweet(chk.tweet)
+				if err != nil {
+					panic(err)
 				}
-				//if latestId < tweet.Id {
-				//latestId = tweet.Id
-				//}
-			}
-			if len(checkQue) == 0 {
-				break loop
+				for _, quote := range tweets {
+					fmt.Printf("Found Quote for Id:%v FullText:%v\n", quote.Id, quote.FullText)
+					r := regexp.MustCompile(chk.expectedFullText_regex)
+					if !r.MatchString(quote.FullText) {
+						t.Errorf("tweet text not match:%v\n%v\n", chk.expectedFullText_regex, quote.FullText)
+						continue
+					}
+					checkQue = append(checkQue[:i], checkQue[i+1:]...)
+					bot_tweet_list = append(bot_tweet_list, quote.Id)
+					break
+				}
+				if len(checkQue) == 0 {
+					break loop
+				}
 			}
 		}
 	}
