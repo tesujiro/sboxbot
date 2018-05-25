@@ -56,7 +56,6 @@ func TestRun(t *testing.T) {
 	defer cancel()
 
 	checkQue := []check{}
-	ngQue := []check{}
 	my_tweet_list := []int64{}
 	bot_tweet_list := []int64{}
 
@@ -115,6 +114,10 @@ loop:
 					panic(err)
 				}
 				for j, quote := range quotes {
+					if quote.QuotedStatusID != chk.tweet.Id {
+						fmt.Printf("==> other tweet QuotedStatusID:%v Text:%v\n", quote.QuotedStatusID, quote.FullText)
+						continue
+					}
 					r := regexp.MustCompile(chk.expectedFullText_regex)
 					if r.MatchString(quote.FullText) {
 						fmt.Printf("==> match index:%v\n", j)
@@ -130,7 +133,7 @@ loop:
 			}
 		}
 	}
-	for _, chk := range ngQue {
+	for _, chk := range checkQue {
 		t.Errorf("Error Not Found Quote for Id:%v FullText:%v\n", chk.tweet.Id, chk.tweet.FullText)
 	}
 	bot_tw := newTwitter("")
