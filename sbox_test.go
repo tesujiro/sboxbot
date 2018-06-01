@@ -109,13 +109,13 @@ loop:
 			found := 0
 			for i, chk := range checkQue {
 				fmt.Printf("Check Tweet Id:%v QuotedStatusID:%v\n", chk.tweet.Id, chk.tweet.QuotedStatusID)
-				quotes, err := tw.searchQuotedTweet(chk.tweet)
+				quotes, err := tw.searchQuotedTweets(chk.tweet)
 				if err != nil {
 					panic(err)
 				}
 				for j, quote := range quotes {
 					if quote.QuotedStatusID != chk.tweet.Id {
-						fmt.Printf("==> other tweet QuotedStatusID:%v Text:%v\n", quote.QuotedStatusID, quote.FullText)
+						fmt.Printf("==> other tweet Id:%v QuotedStatusID:%v Text:%v\n", quote.Id, quote.QuotedStatusID, quote.FullText)
 						continue
 					}
 					r := regexp.MustCompile(chk.expectedFullText_regex)

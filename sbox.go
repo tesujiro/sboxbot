@@ -13,7 +13,7 @@ import (
 
 const CHECK_TIMER = 10 * time.Second
 const CONTAINER_TIMER = 10 * time.Second
-const TWEET_TIMER = 1 * time.Second
+const TWEET_TIMER = 20 * time.Second
 
 type sbox struct {
 	twitter *Twitter
@@ -124,6 +124,7 @@ func (s *sbox) run(ctx context.Context) error {
 		if _, err := s.twitter.quotedTweet(result, &tweet); err != nil {
 			return err
 		}
+		time.Sleep(TWEET_TIMER)
 
 	}
 	return nil

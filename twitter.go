@@ -103,14 +103,18 @@ func (t *Twitter) search(latestId int64) ([]anaconda.Tweet, error) {
 	return searchResult.Statuses, err
 }
 
-func (t *Twitter) searchQuotedTweet(tweet anaconda.Tweet) ([]anaconda.Tweet, error) {
+func (t *Twitter) searchQuotedTweets(tweet anaconda.Tweet) ([]anaconda.Tweet, error) {
 	v := url.Values{}
-	url := fmt.Sprintf("%s\nhttps://twitter.com/%s/status/%d", t.hashtag, tweet.User.ScreenName, tweet.Id)
-	v.Set("q", url)
+	//v.Set("since_id", fmt.Sprintf("%d", tweet.Id+1))
+	//url := fmt.Sprintf("https://twitter.com/%s/status/%d", tweet.User.ScreenName, tweet.Id)
+	//fmt.Printf("url=%v\n", url)
+	//v.Set("q", url)
 	v.Set("include_entities", "true")
-	v.Set("exclude", "retweets")
+	v.Set("result_type", "recent")
+	//v.Set("exclude", "retweets")
 	//fmt.Printf("URL PARAM:%v\n", v)
 	searchResult, err := t.api.GetSearch(t.hashtag, v)
+	//searchResult, err := t.api.GetSearch(url, v)
 	return searchResult.Statuses, err
 }
 
