@@ -37,7 +37,11 @@ func TestRun(t *testing.T) {
 
 	cases := []status{
 		{command: fmt.Sprintf("echo hello world! %v\n%v\n", now, tw.hashtag), expected: "hello world!"},
-		{command: fmt.Sprintf("echo こんにちは、世界！%v\n%v\n", now, tw.hashtag), expected: "こんにちは、世界！"},
+		{
+			command: fmt.Sprintf("I=1\necho hello $I\n#%v\n%v\n", now, tw.hashtag), expected: "hello 1",
+			replies: []status{status{command: fmt.Sprintf("echo hello $(( $I+1 ))\n#%v\n%v\n", now, tw.hashtag), expected: "hello 2"}},
+		},
+		//{command: fmt.Sprintf("echo こんにちは、世界！%v\n%v\n", now, tw.hashtag), expected: "こんにちは、世界！"},
 		//{command: fmt.Sprintf("echo no line break %v %v", now, tw.hashtag), expected: fmt.Sprintf("no line break")},
 		//{command: fmt.Sprintf("echo with no command line %v\n \t\n%v\n", now, tw.hashtag), expected: fmt.Sprintf("with no command line")},
 		//{command: fmt.Sprintf("echo hello long world! %v\nfor i in `seq 200`\ndo\n  echo i=$i\ndone\n%v\n", now, tw.hashtag), expected: fmt.Sprintf("i=20")},
@@ -106,28 +110,49 @@ loop:
 			break loop
 		case <-tick:
 			fmt.Printf("[test]twitter.search now=%s\tlatestId=%v\n", time.Now(), latestId)
-			found := 0
-			for i, chk := range checkQue {
-				fmt.Printf("Check Tweet Id:%v QuotedStatusID:%v\n", chk.tweet.Id, chk.tweet.QuotedStatusID)
-				quotes, err := tw.searchQuotedTweets(chk.tweet)
-				if err != nil {
-					panic(err)
-				}
-				for j, quote := range quotes {
-					if quote.QuotedStatusID != chk.tweet.Id {
-						fmt.Printf("==> other tweet Id:%v QuotedStatusID:%v Text:%v\n", quote.Id, quote.QuotedStatusID, quote.FullText)
-						continue
-					}
-					r := regexp.MustCompile(chk.expectedFullText_regex)
-					if r.MatchString(quote.FullText) {
-						fmt.Printf("==> match index:%v\n", j)
-						checkQue = append(checkQue[:(i-found)], checkQue[i-found+1:]...)
-						found++
-						bot_tweet_list = append(bot_tweet_list, quote.Id)
+			tweets, err := tw.getMentionsTimeline(latestId)
+			if err != nil {
+				panic(err)
+			}
+			for _, tweet := range tweets {
+				fmt.Printf("Check Tweet Id:%v QuotedStatusID:%v\n", tweet.Id, tweet.QuotedStatusID)
+				for i, chk := range checkQue {
+					if tweet.QuotedStatusID == chk.tweet.Id {
+						fmt.Printf("Found Quote for Id:%v FullText:%v\n", chk.tweet.Id, chk.tweet.FullText)
+						r := regexp.MustCompile(chk.expectedFullText_regex)
+						if !r.MatchString(tweet.FullText) {
+							t.Errorf("tweet text not match:%v\n%v\n", chk.expectedFullText_regex, tweet.FullText)
+						}
+						checkQue = append(checkQue[:i], checkQue[i+1:]...)
+						bot_tweet_list = append(bot_tweet_list, tweet.Id)
 						break
 					}
 				}
 			}
+			/*
+				found := 0
+				for i, chk := range checkQue {
+					fmt.Printf("Check Tweet Id:%v QuotedStatusID:%v\n", chk.tweet.Id, chk.tweet.QuotedStatusID)
+					quotes, err := tw.searchQuotedTweets(chk.tweet)
+					if err != nil {
+						panic(err)
+					}
+					for j, quote := range quotes {
+						if quote.QuotedStatusID != chk.tweet.Id {
+							fmt.Printf("==> other tweet Id:%v QuotedStatusID:%v Text:%v\n", quote.Id, quote.QuotedStatusID, quote.FullText)
+							continue
+						}
+						r := regexp.MustCompile(chk.expectedFullText_regex)
+						if r.MatchString(quote.FullText) {
+							fmt.Printf("==> match index:%v\n", j)
+							checkQue = append(checkQue[:(i-found)], checkQue[i-found+1:]...)
+							found++
+							bot_tweet_list = append(bot_tweet_list, quote.Id)
+							break
+						}
+					}
+				}
+			*/
 			if len(checkQue) == 0 {
 				break loop
 			}
