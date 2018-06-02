@@ -1,2 +1,2 @@
 # sboxbot
-small container bot
+simple container bot
