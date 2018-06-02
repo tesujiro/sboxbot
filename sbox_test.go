@@ -14,7 +14,7 @@ import (
 	"github.com/ChimeraCoder/anaconda"
 )
 
-const MAX_TEST_TIME = 1800 * time.Second
+const MAX_TEST_TIME = 600 * time.Second
 const TEST_LOOP_TIMER = 10 * time.Second
 
 type check struct {

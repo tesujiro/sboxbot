@@ -11,9 +11,9 @@ import (
 	"github.com/ChimeraCoder/anaconda"
 )
 
-const CHECK_TIMER = 10 * time.Second
+const CHECK_TIMER = 30 * time.Second
 const CONTAINER_TIMER = 10 * time.Second
-const TWEET_TIMER = 20 * time.Second
+const TWEET_TIMER = 10 * time.Second
 
 type sbox struct {
 	twitter *Twitter
