@@ -82,8 +82,8 @@ func (c *instance) doRun(ctx context.Context) {
 	*/
 
 	resp, err := cli.ContainerCreate(ctx, &container.Config{
-		//Image:        "alpine",
-		//Cmd:          []string{"/bin/ash"},
+		//Image: "alpine",
+		//Cmd:   []string{"/bin/ash"},
 		Image:        "centos",
 		Cmd:          []string{"/bin/bash"},
 		OpenStdin:    true,

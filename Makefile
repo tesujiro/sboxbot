@@ -7,6 +7,7 @@ deploy_container:
 	for p in `kubectl get pod | grep $(MODULE) | awk '{print $$1}'`;do\
 		kubectl delete pod $$p;\
 	done
+	docker rmi $$(docker images -a --filter "dangling=true" -q) -f
 
 build: $(MODULE)
 
