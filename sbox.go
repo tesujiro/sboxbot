@@ -24,7 +24,12 @@ func new() *sbox {
 }
 
 func (s *sbox) execOnContainer(ctx context.Context, commands []string) (string, error) {
-	d := newDockerContainer()
+	d, err := newDockerContainer(ctx, "centos", []string{"/bin/bash"})
+	if err != nil {
+		return "", err
+	}
+	defer d.finalize()
+
 	if err := d.run(ctx); err != nil {
 		return "", err
 	}

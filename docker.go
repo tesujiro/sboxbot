@@ -12,6 +12,8 @@ import (
 )
 
 type instance struct {
+	client    client.Client
+	ID        string
 	cmdCh     chan string
 	resultCh  chan string
 	runErrCh  chan error
@@ -20,7 +22,7 @@ type instance struct {
 	conn      net.Conn
 }
 
-func newDockerContainer() *instance {
+func newDockerContainer(ctx context.Context, image string, cmd []string) (*instance, error) {
 	c := instance{
 		cmdCh:     make(chan string),
 		resultCh:  make(chan string),
@@ -28,7 +30,56 @@ func newDockerContainer() *instance {
 		execErrCh: make(chan error),
 		exitErrCh: make(chan error),
 	}
-	return &c
+
+	if cli, err := client.NewClientWithOpts(); err != nil {
+		fmt.Printf("Container New Client ERROR: %v\n", err)
+		return &c, err
+	} else {
+		c.client = *cli
+	}
+
+	/*
+		reader, err := c.client.ImagePull(ctx, "docker.io/library/alpine", types.ImagePullOptions{})
+		if err != nil {
+		}
+		io.Copy(os.Stdout, reader)
+	*/
+
+	resp, err := c.client.ContainerCreate(ctx, &container.Config{
+		//Image: "alpine",
+		//Cmd:   []string{"/bin/ash"},
+		//Image:        "centos",
+		//Cmd:          []string{"/bin/bash"},
+		Image:        image,
+		Cmd:          cmd,
+		OpenStdin:    true,
+		StdinOnce:    true,
+		AttachStdin:  true,
+		AttachStdout: true,
+		AttachStderr: true,
+		Tty:          false,
+	}, nil, nil, "")
+	if err != nil {
+		fmt.Printf("Container Create ERROR: %v\n", err)
+		panic(err)
+	}
+	c.ID = resp.ID
+
+	//defer func() {
+	//if err := c.client.ContainerRemove(context.Background(), resp.ID, types.ContainerRemoveOptions{}); err != nil {
+	//fmt.Printf("ContainerRemove ERROR: %v\n", err)
+	//}
+	//}()
+
+	return &c, nil
+}
+
+func (c *instance) finalize() error {
+	if err := c.client.ContainerRemove(context.Background(), c.ID, types.ContainerRemoveOptions{}); err != nil {
+		fmt.Printf("ContainerRemove ERROR: %v\n", err)
+		return err
+	}
+	return nil
 }
 
 func (c *instance) run(ctx context.Context) error {
@@ -67,52 +118,14 @@ func (c *instance) result() (string, error) {
 
 func (c *instance) doRun(ctx context.Context) {
 
-	cli, err := client.NewClientWithOpts()
-	if err != nil {
-		fmt.Printf("Container New Client ERROR: %v\n", err)
-		c.runErrCh <- err
-		return
-	}
-
-	/*
-		reader, err := cli.ImagePull(ctx, "docker.io/library/alpine", types.ImagePullOptions{})
-		if err != nil {
-		}
-		io.Copy(os.Stdout, reader)
-	*/
-
-	resp, err := cli.ContainerCreate(ctx, &container.Config{
-		//Image: "alpine",
-		//Cmd:   []string{"/bin/ash"},
-		Image:        "centos",
-		Cmd:          []string{"/bin/bash"},
-		OpenStdin:    true,
-		StdinOnce:    true,
-		AttachStdin:  true,
-		AttachStdout: true,
-		AttachStderr: true,
-		Tty:          false,
-	}, nil, nil, "")
-	if err != nil {
-		fmt.Printf("Container Create ERROR: %v\n", err)
-		c.runErrCh <- err
-		return
-	}
-
-	defer func() {
-		if err := cli.ContainerRemove(context.Background(), resp.ID, types.ContainerRemoveOptions{}); err != nil {
-			fmt.Printf("ContainerRemove ERROR: %v\n", err)
-		}
-	}()
-
 	// Start Container
-	if err := cli.ContainerStart(ctx, resp.ID, types.ContainerStartOptions{}); err != nil {
+	if err := c.client.ContainerStart(ctx, c.ID, types.ContainerStartOptions{}); err != nil {
 		fmt.Printf("Container Start ERROR: %v\n", err)
 		c.runErrCh <- err
 		return
 	}
 	defer func() {
-		if err := cli.ContainerStop(context.Background(), resp.ID, nil); err != nil {
+		if err := c.client.ContainerStop(context.Background(), c.ID, nil); err != nil {
 			fmt.Printf("ContainerStop ERROR: %v\n", err)
 		}
 	}()
@@ -120,7 +133,7 @@ func (c *instance) doRun(ctx context.Context) {
 	fmt.Printf("Container Started\n")
 
 	// Attach Container
-	hjConn, err := cli.ContainerAttach(ctx, resp.ID, types.ContainerAttachOptions{
+	hjConn, err := c.client.ContainerAttach(ctx, c.ID, types.ContainerAttachOptions{
 		Stream: true,
 		Stdin:  true,
 		Stdout: true,
@@ -145,7 +158,7 @@ func (c *instance) doRun(ctx context.Context) {
 	}
 
 	c.conn.Write([]byte(fmt.Sprintln("exit")))
-	statusCh, errCh := cli.ContainerWait(ctx, resp.ID, container.WaitConditionNotRunning)
+	statusCh, errCh := c.client.ContainerWait(ctx, c.ID, container.WaitConditionNotRunning)
 	select {
 	case err := <-errCh:
 		if err != nil {

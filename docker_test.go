@@ -23,16 +23,25 @@ func TestExecOnCointainer(t *testing.T) {
 		defer cancel()
 		//actual := execOnContainer(ctx, c.commands)
 		//fmt.Println(actual)
-		d := newDockerContainer()
+		d, err := newDockerContainer(ctx, "centos", []string{"/bin/bash"})
+		if err != nil {
+			t.Errorf("create container error: %v", err)
+			continue
+		}
+		defer d.finalize()
+
 		if err := d.run(ctx); err != nil {
 			t.Errorf("run error: %v", err)
+			continue
 		}
 		if err := d.exec(c.commands); err != nil {
 			t.Errorf("exec error: %v", err)
+			continue
 		}
 		actual, err := d.exit()
 		if err != nil {
 			t.Errorf("exit error: %v", err)
+			continue
 		}
 
 		if c.expected != "" && actual != c.expected {

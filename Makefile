@@ -43,6 +43,8 @@ delete_secret:
 test:
 	go test -v ./
 
+test_docker:
+	go test -v docker_test.go docker.go
 clean:
 	-docker rmi $(MODULE) localhost:5000/$(MODULE)
 	-rm $(MODULE)
