@@ -13,7 +13,8 @@ import (
 
 type instance struct {
 	client    client.Client
-	ID        string
+	imageId   string
+	id        string
 	cmdCh     chan string
 	resultCh  chan string
 	runErrCh  chan error
@@ -63,7 +64,7 @@ func newDockerContainer(ctx context.Context, image string, cmd []string) (*insta
 		fmt.Printf("Container Create ERROR: %v\n", err)
 		panic(err)
 	}
-	c.ID = resp.ID
+	c.id = resp.ID
 
 	//defer func() {
 	//if err := c.client.ContainerRemove(context.Background(), resp.ID, types.ContainerRemoveOptions{}); err != nil {
@@ -75,8 +76,35 @@ func newDockerContainer(ctx context.Context, image string, cmd []string) (*insta
 }
 
 func (c *instance) finalize() error {
-	if err := c.client.ContainerRemove(context.Background(), c.ID, types.ContainerRemoveOptions{}); err != nil {
+	return c.remove()
+}
+
+func (c *instance) commit(img string) error {
+	cco := types.ContainerCommitOptions{
+		Reference: img,
+		Comment:   "sbox bot",
+		Config:    &container.Config{},
+	}
+	if resp, err := c.client.ContainerCommit(context.Background(), c.id, cco); err != nil {
 		fmt.Printf("ContainerRemove ERROR: %v\n", err)
+		return err
+	} else {
+		c.imageId = resp.ID
+	}
+	return nil
+}
+
+func (c *instance) remove() error {
+	if err := c.client.ContainerRemove(context.Background(), c.id, types.ContainerRemoveOptions{}); err != nil {
+		fmt.Printf("ContainerRemove ERROR: %v\n", err)
+		return err
+	}
+	return nil
+}
+
+func (c *instance) removeImage() error {
+	if _, err := c.client.ImageRemove(context.Background(), c.imageId, types.ImageRemoveOptions{}); err != nil {
+		fmt.Printf("ImageRemove ERROR: %v\n", err)
 		return err
 	}
 	return nil
@@ -119,13 +147,13 @@ func (c *instance) result() (string, error) {
 func (c *instance) doRun(ctx context.Context) {
 
 	// Start Container
-	if err := c.client.ContainerStart(ctx, c.ID, types.ContainerStartOptions{}); err != nil {
+	if err := c.client.ContainerStart(ctx, c.id, types.ContainerStartOptions{}); err != nil {
 		fmt.Printf("Container Start ERROR: %v\n", err)
 		c.runErrCh <- err
 		return
 	}
 	defer func() {
-		if err := c.client.ContainerStop(context.Background(), c.ID, nil); err != nil {
+		if err := c.client.ContainerStop(context.Background(), c.id, nil); err != nil {
 			fmt.Printf("ContainerStop ERROR: %v\n", err)
 		}
 	}()
@@ -133,7 +161,7 @@ func (c *instance) doRun(ctx context.Context) {
 	fmt.Printf("Container Started\n")
 
 	// Attach Container
-	hjConn, err := c.client.ContainerAttach(ctx, c.ID, types.ContainerAttachOptions{
+	hjConn, err := c.client.ContainerAttach(ctx, c.id, types.ContainerAttachOptions{
 		Stream: true,
 		Stdin:  true,
 		Stdout: true,
@@ -158,7 +186,7 @@ func (c *instance) doRun(ctx context.Context) {
 	}
 
 	c.conn.Write([]byte(fmt.Sprintln("exit")))
-	statusCh, errCh := c.client.ContainerWait(ctx, c.ID, container.WaitConditionNotRunning)
+	statusCh, errCh := c.client.ContainerWait(ctx, c.id, container.WaitConditionNotRunning)
 	select {
 	case err := <-errCh:
 		if err != nil {
