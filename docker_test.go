@@ -28,7 +28,7 @@ func TestExecOnCointainer(t *testing.T) {
 			t.Errorf("create container error: %v", err)
 			continue
 		}
-		defer d.finalize()
+		defer d.remove()
 
 		if err := d.run(ctx); err != nil {
 			t.Errorf("run error: %v", err)
@@ -69,7 +69,7 @@ func TestCommitContainer(t *testing.T) {
 			t.Errorf("create container error: %v", err)
 			continue
 		}
-		defer d.finalize()
+		defer d.remove()
 
 		if err := d.run(ctx); err != nil {
 			t.Errorf("run error: %v", err)

@@ -75,10 +75,6 @@ func newDockerContainer(ctx context.Context, image string, cmd []string) (*insta
 	return &c, nil
 }
 
-func (c *instance) finalize() error {
-	return c.remove()
-}
-
 func (c *instance) commit(img string) error {
 	cco := types.ContainerCommitOptions{
 		Reference: img,
