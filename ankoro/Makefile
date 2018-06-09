@@ -13,9 +13,9 @@ build_container: Dockerfile
 register_container:
 	docker tag $(MODULE) localhost:5000/$(MODULE)
 	docker push localhost:5000/$(MODULE)
-	docker rmi localhost:5000/$(MODULE)
+	-docker rmi localhost:5000/$(MODULE) -f
 	docker pull localhost:5000/$(MODULE)
-	docker rmi $$(docker images -a --filter "dangling=true" -q) -f
+	-docker rmi $$(docker images -a --filter "dangling=true" -q) -f
 
 start:
 	docker run -t -i -d $(MODULE) 
@@ -26,3 +26,5 @@ stop:
 	docker rm $$( docker ps -a | grep $(MODULE) | awk '{print $$1}' )
 attach:
 	docker attach $$( docker ps -a | grep $(MODULE) | awk '{print $$1}' )
+attach_stdout:
+	docker attach $$( docker ps -a | grep $(MODULE) | awk '{print $$1}' )  --no-stdin

@@ -1,7 +1,5 @@
-FROM centos
-ARG ANKO
+FROM alpine
 MAINTAINER tesujiro <tesujiro@gmail.com>
 RUN echo "now building..."
-#ADD $ANKO /
 ADD ./anko /
 CMD ["/anko"]
