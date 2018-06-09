@@ -28,7 +28,7 @@ func (s *sbox) execOnContainer(ctx context.Context, commands []string) (string, 
 	if err != nil {
 		return "", err
 	}
-	defer d.remove()
+	defer d.remove(ctx)
 
 	if err := d.run(ctx); err != nil {
 		return "", err

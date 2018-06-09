@@ -12,15 +12,16 @@ import (
 )
 
 type instance struct {
-	client    client.Client
-	imageId   string
-	id        string
-	cmdCh     chan string
-	resultCh  chan string
-	runErrCh  chan error
-	execErrCh chan error
-	exitErrCh chan error
-	conn      net.Conn
+	client     client.Client
+	imageId    string
+	id         string
+	cmdCh      chan string
+	resultCh   chan string
+	runErrCh   chan error
+	execErrCh  chan error
+	exitErrCh  chan error
+	stdinConn  net.Conn
+	stdoutConn net.Conn
 }
 
 func newDockerContainer(ctx context.Context, image string, cmd []string) (*instance, error) {
@@ -47,10 +48,6 @@ func newDockerContainer(ctx context.Context, image string, cmd []string) (*insta
 	*/
 
 	resp, err := c.client.ContainerCreate(ctx, &container.Config{
-		//Image: "alpine",
-		//Cmd:   []string{"/bin/ash"},
-		//Image:        "centos",
-		//Cmd:          []string{"/bin/bash"},
 		Image:        image,
 		Cmd:          cmd,
 		OpenStdin:    true,
@@ -66,23 +63,18 @@ func newDockerContainer(ctx context.Context, image string, cmd []string) (*insta
 	}
 	c.id = resp.ID
 
-	//defer func() {
-	//if err := c.client.ContainerRemove(context.Background(), resp.ID, types.ContainerRemoveOptions{}); err != nil {
-	//fmt.Printf("ContainerRemove ERROR: %v\n", err)
-	//}
-	//}()
-
 	return &c, nil
 }
 
-func (c *instance) commit(img string) error {
+func (c *instance) commit(ctx context.Context, img string) error {
+	fmt.Printf("ContainerCommit: \n")
 	cco := types.ContainerCommitOptions{
 		Reference: img,
 		Comment:   "sbox bot",
 		Config:    &container.Config{},
 	}
-	if resp, err := c.client.ContainerCommit(context.Background(), c.id, cco); err != nil {
-		fmt.Printf("ContainerRemove ERROR: %v\n", err)
+	if resp, err := c.client.ContainerCommit(ctx, c.id, cco); err != nil {
+		fmt.Printf("ContainerCommit ERROR: %v\n", err)
 		return err
 	} else {
 		c.imageId = resp.ID
@@ -90,16 +82,16 @@ func (c *instance) commit(img string) error {
 	return nil
 }
 
-func (c *instance) remove() error {
-	if err := c.client.ContainerRemove(context.Background(), c.id, types.ContainerRemoveOptions{}); err != nil {
+func (c *instance) remove(ctx context.Context) error {
+	if err := c.client.ContainerRemove(ctx, c.id, types.ContainerRemoveOptions{}); err != nil {
 		fmt.Printf("ContainerRemove ERROR: %v\n", err)
 		return err
 	}
 	return nil
 }
 
-func (c *instance) removeImage() error {
-	if _, err := c.client.ImageRemove(context.Background(), c.imageId, types.ImageRemoveOptions{}); err != nil {
+func (c *instance) removeImage(ctx context.Context) error {
+	if _, err := c.client.ImageRemove(ctx, c.imageId, types.ImageRemoveOptions{}); err != nil {
 		fmt.Printf("ImageRemove ERROR: %v\n", err)
 		return err
 	}
@@ -126,14 +118,12 @@ func (c *instance) exit() (string, error) {
 const BUFSIZE = 1024
 
 func (c *instance) result() (string, error) {
-	//buf := new(bytes.Buffer)
 	var err error
 	buf := make([]byte, BUFSIZE)
-	_, err = c.conn.Read(buf)
+	_, err = c.stdoutConn.Read(buf)
 	//fmt.Printf("read buffer \n%v\n", hex.Dump(buf))
 	buf = bytes.TrimRight(buf, "\x00")
 	result := string(buf)
-	//fmt.Printf("string len(%v) : %v\n", len(result), result)
 	if len(result) > 8 {
 		result = result[8:] // remove header bytes
 	}
@@ -154,12 +144,26 @@ func (c *instance) doRun(ctx context.Context) {
 		}
 	}()
 
-	fmt.Printf("Container Started\n")
-
-	// Attach Container
-	hjConn, err := c.client.ContainerAttach(ctx, c.id, types.ContainerAttachOptions{
+	// Attach Container for Stdin
+	readConn, err := c.client.ContainerAttach(ctx, c.id, types.ContainerAttachOptions{
 		Stream: true,
 		Stdin:  true,
+		Stdout: false,
+		Stderr: false,
+		Logs:   false,
+	})
+	if err != nil {
+		fmt.Printf("Container Attach ERROR: %v\n", err)
+		c.runErrCh <- err
+		return
+	}
+	defer readConn.Close()
+	c.stdinConn = readConn.Conn
+
+	// Attach Container for Stdout,Stderr
+	writeConn, err := c.client.ContainerAttach(ctx, c.id, types.ContainerAttachOptions{
+		Stream: true,
+		Stdin:  false,
 		Stdout: true,
 		Stderr: true,
 		Logs:   false,
@@ -169,19 +173,19 @@ func (c *instance) doRun(ctx context.Context) {
 		c.runErrCh <- err
 		return
 	}
-	defer hjConn.Close()
-	c.conn = hjConn.Conn
-	fmt.Printf("Container Attached\n")
-	c.runErrCh <- nil
+	defer writeConn.Close()
+	c.stdoutConn = writeConn.Conn
+
+	c.runErrCh <- nil // no error while attaching
 
 	for cmd := range c.cmdCh {
 		fmt.Printf("cmd received:%v", cmd)
 		//cmd = fmt.Sprintf("%s\nexit\n", cmd)
-		c.conn.Write([]byte(cmd))
+		c.stdinConn.Write([]byte(cmd))
 		c.execErrCh <- nil
 	}
 
-	c.conn.Write([]byte(fmt.Sprintln("exit")))
+	c.stdinConn.Close() // finish command
 	statusCh, errCh := c.client.ContainerWait(ctx, c.id, container.WaitConditionNotRunning)
 	select {
 	case err := <-errCh:
@@ -192,8 +196,9 @@ func (c *instance) doRun(ctx context.Context) {
 			c.exitErrCh <- err
 		}
 	case <-statusCh:
+	case <-ctx.Done():
 	}
-	fmt.Printf("Container Wait Finished\n")
+
 	result, _ := c.result()
 	c.resultCh <- result
 	c.exitErrCh <- nil
