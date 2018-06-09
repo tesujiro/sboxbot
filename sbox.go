@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"encoding/json"
+	"flag"
 	"fmt"
 	"os"
 	"runtime"
@@ -16,15 +18,23 @@ const CONTAINER_TIMER = 10 * time.Second
 const TWEET_TIMER = 10 * time.Second
 
 type sbox struct {
-	twitter *Twitter
+	twitter        *Twitter
+	containerImage string
+	containerCmd   []string
 }
 
-func new() *sbox {
-	return &sbox{twitter: newTwitter("")}
+func new(image, commands string) *sbox {
+	var cmdArray []string
+	if err := json.Unmarshal([]byte(commands), &cmdArray); err != nil {
+		fmt.Printf("Container Commands Unamarshall Error: %v\n", commands)
+		panic(err)
+	}
+	return &sbox{twitter: newTwitter(""), containerImage: image, containerCmd: cmdArray}
 }
 
 func (s *sbox) execOnContainer(ctx context.Context, commands []string) (string, error) {
-	d, err := newDockerContainer(ctx, "centos", []string{"/bin/bash"})
+	//d, err := newDockerContainer(ctx, "centos", []string{"/bin/bash"})
+	d, err := newDockerContainer(ctx, s.containerImage, s.containerCmd)
 	if err != nil {
 		return "", err
 	}
@@ -137,7 +147,11 @@ func (s *sbox) run(ctx context.Context) error {
 
 func run(ctx context.Context) error {
 
-	s := new()
+	image := flag.String("image", "alpine", "container image")
+	cmd := flag.String("cmd", "/bin/ash", "container commands in string array ex. \"[\"/bin/bash\",]\"")
+	flag.Parse()
+
+	s := new(*image, *cmd)
 	tick := time.NewTicker(CHECK_TIMER).C
 
 	if err := s.run(ctx); err != nil {
