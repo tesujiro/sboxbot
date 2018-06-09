@@ -1,4 +1,4 @@
-MODULE=ankoro
+MODULE=anko
 ANKO=anko
 GOOS=linux
 
