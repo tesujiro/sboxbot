@@ -75,10 +75,12 @@ func (s *sbox) getCommand(text string) (string, error) {
 func (s *sbox) upTree(tweet anaconda.Tweet) ([]string, error) {
 	if tweet.QuotedStatusID != 0 {
 		fmt.Printf("skip because of QuotedStatusID:%v\n", tweet.QuotedStatusID)
-		s.twitter.savedata.LatestId = tweet.Id
-		fmt.Printf("s.twitter.savedata.LatestId =%d\n", s.twitter.savedata.LatestId)
-		if err := s.twitter.writeSavedata(); err != nil {
-			return []string{}, err
+		if s.twitter.savedata.LatestId < tweet.Id {
+			s.twitter.savedata.LatestId = tweet.Id
+			fmt.Printf("s.twitter.savedata.LatestId =%d\n", s.twitter.savedata.LatestId)
+			if err := s.twitter.writeSavedata(); err != nil {
+				return []string{}, err
+			}
 		}
 		return []string{}, nil
 	}
