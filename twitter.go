@@ -153,7 +153,8 @@ func (t *Twitter) deleteTweet(id int64) (anaconda.Tweet, error) {
 func (t *Twitter) quotedTweet(result string, tweet *anaconda.Tweet) (anaconda.Tweet, error) {
 	//status := fmt.Sprintf("@%s\n%s%s\nhttps://twitter.com/%s/status/%d", tweet.User.ScreenName, result, t.hashtag, tweet.User.ScreenName, tweet.Id)
 	header := fmt.Sprintf("@%s\n", tweet.User.ScreenName)
-	footer := fmt.Sprintf("%s\nhttps://twitter.com/%s/status/%d", t.hashtag, tweet.User.ScreenName, tweet.Id)
+	//footer := fmt.Sprintf("%s\nhttps://twitter.com/%s/status/%d", t.hashtag, tweet.User.ScreenName, tweet.Id)
+	footer := fmt.Sprintf("https://twitter.com/%s/status/%d", tweet.User.ScreenName, tweet.Id)
 	if len(header+result+footer) > TWEET_MAX_CHARS {
 		result = result[0:TWEET_MAX_CHARS-1-len(header+footer)] + "\n"
 	}
