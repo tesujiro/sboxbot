@@ -6,6 +6,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"regexp"
 	"runtime"
 	"strings"
 	"time"
@@ -63,10 +64,12 @@ func (s *sbox) getCommand(text string) (string, error) {
 	}
 	text = strings.Replace(text, s.twitter.hashtag, "", -1)
 	text = addLineBreak(text)
-	if strings.Replace(text, " \t\n", "", -1) == "" {
-		return "", nil
+	rep := regexp.MustCompile(`^[ \t]*\n`)
+	var cmds string
+	for _, l := range strings.SplitAfter(text, "\n") {
+		cmds += rep.ReplaceAllString(l, "")
 	}
-	return text, nil
+	return cmds, nil
 }
 
 func (s *sbox) upTree(tweet anaconda.Tweet) ([]string, error) {
