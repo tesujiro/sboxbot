@@ -5,7 +5,8 @@ GOOS=linux
 install_container: build build_container register_container
 
 build: 
-	GOOS=$(GOOS) go build -o $(ANKO) $(GOPATH)/src/github.com/mattn/anko/anko.go
+	#GOOS=$(GOOS) go build -o $(ANKO) $(GOPATH)/src/github.com/mattn/anko/anko.go
+	GOOS=$(GOOS) go build -o $(ANKO) .
 
 build_container: Dockerfile
 	docker build -t $(MODULE) --build-arg ANKO=$(ANKO) .
