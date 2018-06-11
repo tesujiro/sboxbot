@@ -155,7 +155,8 @@ func runInteractive() int {
 			continue
 		}
 
-		fmt.Printf("%#v\n", v)
+		//fmt.Printf("%#v\n", v)
+		var _ = v
 	}
 
 	if err := scanner.Err(); err != nil {
