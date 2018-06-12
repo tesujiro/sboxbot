@@ -1,30 +1,6 @@
 MODULE=ankoro
 GOOS=linux
 
-all: build container deploy_container
-
-deploy_container:
-	for p in `kubectl get pod | grep $(MODULE) | awk '{print $$1}'`;do\
-		kubectl delete pod $$p;\
-	done
-	docker rmi $$(docker images -a --filter "dangling=true" -q) -f
-
-build: $(MODULE)
-
-container: build_container register
-
-$(MODULE): sbox.go twitter.go docker.go
-	GOOS=$(GOOS) go build -o $(MODULE) sbox.go twitter.go docker.go
-	
-build_container: Dockerfile $(MODULE)
-	docker build -t $(MODULE) .
-
-register:
-	docker tag $(MODULE) localhost:5000/$(MODULE)
-	docker push localhost:5000/$(MODULE)
-	docker rmi localhost:5000/$(MODULE)
-	docker pull localhost:5000/$(MODULE)
-
 create_secret:
 	/bin/echo -n $$HASHTAG >./.HASHTAG
 	/bin/echo -n $$TWITTER_CONSUMER_KEY >./.TWITTER_CONSUMER_KEY
@@ -40,11 +16,6 @@ create_secret:
 delete_secret:
 	kubectl delete secret $(MODULE)-twitter-apikey
 	
-test:
-	go test -v ./
-
-test_docker:
-	go test -v docker_test.go docker.go
 clean:
 	-docker rmi $(MODULE) localhost:5000/$(MODULE)
 	-rm $(MODULE)

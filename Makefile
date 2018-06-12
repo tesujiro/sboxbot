@@ -43,6 +43,9 @@ delete_secret:
 test:
 	go test -v ./
 
+test_ankoro:
+	go test -v ankoro_test.go twitter.go
+
 test_docker:
 	go test -v docker_test.go docker.go
 clean:
