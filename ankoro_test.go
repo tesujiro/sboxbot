@@ -44,22 +44,10 @@ func TestRun(t *testing.T) {
 			command:  fmt.Sprintf("%v\nXxxx\n#%v\n", tw.hashtag, now),
 			expected: "ERROR",
 		},
-		//{
-		//command: fmt.Sprintf("I=1\necho hello $I\n#%v\n%v\n", now, tw.hashtag), expected: "hello 1",
-		//replies: []status{status{command: fmt.Sprintf("echo hello $(( $I+1 ))\n#%v\n%v\n", now, tw.hashtag), expected: "hello 2"}},
-		//},
-		//{command: fmt.Sprintf("echo こんにちは、世界！%v\n%v\n", now, tw.hashtag), expected: "こんにちは、世界！"},
-		//{command: fmt.Sprintf("echo no line break %v %v", now, tw.hashtag), expected: fmt.Sprintf("no line break")},
-		//{command: fmt.Sprintf("echo with no command line %v\n \t\n%v\n", now, tw.hashtag), expected: fmt.Sprintf("with no command line")},
-		//{command: fmt.Sprintf("echo hello long world! %v\nfor i in `seq 200`\ndo\n  echo i=$i\ndone\n%v\n", now, tw.hashtag), expected: fmt.Sprintf("i=20")},
-		//{
-		//command: fmt.Sprintf("echo hello 1! %v\n%v\n", now, tw.hashtag), expected: "hello 1!",
-		//replies: []status{status{command: fmt.Sprintf("echo hello 2! %v\n%v\n", now, tw.hashtag), expected: "hello 2!"}},
-		//},
-
-		//{commands: fmt.Sprintf("sleep\n"), expected: fmt.Sprintf("hello world!\n")},
-		//{commands: fmt.Sprintf("set\n")},
-		//{commands: fmt.Sprintf("while : \ndo\n:\ndone\n"), expected: fmt.Sprintf("exit error: context deadline exceeded")},
+		{
+			command: fmt.Sprintf("%v\nvar fmt=import(\"fmt\")\n#%v\n", tw.hashtag, now),
+			replies: []status{status{command: fmt.Sprintf("%v\nfmt.Println(\"abc\")\n#%v\n", tw.hashtag, now), expected: "abc"}},
+		},
 	}
 
 	ctx := context.Background()
