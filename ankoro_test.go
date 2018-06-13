@@ -40,6 +40,10 @@ func TestRun(t *testing.T) {
 			command:  fmt.Sprintf("println(\"hello\")\n#%v\n%v\n", now, tw.hashtag),
 			expected: "hello",
 		},
+		{
+			command:  fmt.Sprintf("%v\nXxxx\n#%v\n", tw.hashtag, now),
+			expected: "ERROR",
+		},
 		//{
 		//command: fmt.Sprintf("I=1\necho hello $I\n#%v\n%v\n", now, tw.hashtag), expected: "hello 1",
 		//replies: []status{status{command: fmt.Sprintf("echo hello $(( $I+1 ))\n#%v\n%v\n", now, tw.hashtag), expected: "hello 2"}},
@@ -121,7 +125,7 @@ loop:
 				fmt.Printf("Check Tweet Id:%v QuotedStatusID:%v\n", tweet.Id, tweet.QuotedStatusID)
 				for i, chk := range checkQue {
 					if tweet.QuotedStatusID == chk.tweet.Id {
-						fmt.Printf("Found Quote for Id:%v FullText:%v\n", chk.tweet.Id, chk.tweet.FullText)
+						fmt.Printf("Found Quote for Id:%v FullText:[%v]\n", chk.tweet.Id, tweet.FullText)
 						r := regexp.MustCompile(chk.expectedFullText_regex)
 						if !r.MatchString(tweet.FullText) {
 							t.Errorf("tweet text not match:%v\n%v\n", chk.expectedFullText_regex, tweet.FullText)
