@@ -146,9 +146,9 @@ func runInteractive() int {
 		}
 		if err != nil {
 			if e, ok := err.(*vm.Error); ok {
-				fmt.Fprintf(os.Stderr, "%d:%d %s\n", e.Pos.Line, e.Pos.Column, err)
+				fmt.Fprintf(os.Stderr, "ERROR %d:%d %s\n", e.Pos.Line, e.Pos.Column, err)
 			} else if e, ok := err.(*parser.Error); ok {
-				fmt.Fprintf(os.Stderr, "%d:%d %s\n", e.Pos.Line, e.Pos.Column, err)
+				fmt.Fprintf(os.Stderr, "ERROR %d:%d %s\n", e.Pos.Line, e.Pos.Column, err)
 			} else {
 				fmt.Fprintln(os.Stderr, err)
 			}
