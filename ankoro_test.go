@@ -12,8 +12,6 @@ import (
 	"time"
 
 	"github.com/ChimeraCoder/anaconda"
-	//"github.com/tesujiro/sboxbot"
-	//"github.com/tesujiro/sboxbot"
 )
 
 const MAX_TEST_TIME = 600 * time.Second
@@ -39,6 +37,10 @@ func TestRun(t *testing.T) {
 		{
 			command:  fmt.Sprintf("println(\"hello\")\n#%v\n%v\n", now, tw.hashtag),
 			expected: "hello",
+		},
+		{
+			command:  fmt.Sprintf("aaa=100\nprintln(aaa*123)\n#%v\n%v\n", now, tw.hashtag),
+			expected: "12300",
 		},
 		{
 			command:  fmt.Sprintf("%v\nXxxx\n#%v\n", tw.hashtag, now),
