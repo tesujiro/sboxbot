@@ -29,3 +29,15 @@ uninstall:
 logs:
 	kubectl logs -f `kubectl get po | awk '/$(MODULE)/{print $$1}'`
 
+gcloud_install:
+	kubectl apply -f gcloud_deploy.yaml
+
+gcloud_uninstall:
+	kubectl delete -f gcloud_deploy.yaml
+
+switch_local:
+	kubectl config use-context docker-for-desktop --insecure-skip-tls-verify=true
+
+switch_gcloud:
+	kubectl config use-context gke_anko-robot_asia-east1-b_ankoro-cluster
+

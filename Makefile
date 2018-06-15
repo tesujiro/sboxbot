@@ -25,6 +25,12 @@ register:
 	docker rmi localhost:5000/$(MODULE)
 	docker pull localhost:5000/$(MODULE)
 
+GCP_PROJECT=anko-robot
+GCP_TAG=asia.gcr.io/$(GCP_PROJECT)/$(MODULE)
+register_gcloud:
+	docker build -t $(GCP_TAG) .
+	gcloud docker -- push $(GCP_TAG)
+
 create_secret:
 	/bin/echo -n $$HASHTAG >./.HASHTAG
 	/bin/echo -n $$TWITTER_CONSUMER_KEY >./.TWITTER_CONSUMER_KEY

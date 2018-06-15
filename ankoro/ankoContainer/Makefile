@@ -18,6 +18,12 @@ register_container:
 	docker pull localhost:5000/$(MODULE)
 	-docker rmi $$(docker images -a --filter "dangling=true" -q) -f
 
+GCP_PROJECT=anko-robot
+GCP_TAG=asia.gcr.io/$(GCP_PROJECT)/$(MODULE)
+register_gcloud:
+	docker build -t $(GCP_TAG) .
+	gcloud docker -- push $(GCP_TAG)
+
 start:
 	docker run -t -i -d $(MODULE) 
 	#docker run --rm -t -i $(MODULE) 

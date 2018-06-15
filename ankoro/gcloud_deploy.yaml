@@ -1,0 +1,59 @@
+apiVersion: "extensions/v1beta1"
+kind: Deployment
+metadata:
+  name: ankoro
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ankoro
+  template:
+    metadata:
+      labels: 
+        app: ankoro
+        #version: v1
+    spec:
+      containers:
+      - name: ankoro
+        image: asia.gcr.io/anko-robot/sbox 
+        command: ["/sbox"]
+        args: ["-image","asia.gcr.io/anko-robot/anko","-cmd","[\"/anko\"]"]
+        volumeMounts:
+        - mountPath: /var/run/docker.sock
+          name: docker-volume
+        - mountPath: /volume
+          name: ankoro-volume
+        env:
+          - name: HASHTAG
+            valueFrom:
+              secretKeyRef:
+                name: ankoro-twitter-apikey
+                key: HASHTAG
+          - name: TWITTER_CONSUMER_KEY
+            valueFrom:
+              secretKeyRef:
+                name: ankoro-twitter-apikey
+                key: TWITTER_CONSUMER_KEY
+          - name: TWITTER_CONSUMER_SECRET
+            valueFrom:
+              secretKeyRef:
+                name: ankoro-twitter-apikey
+                key: TWITTER_CONSUMER_SECRET
+          - name: TWITTER_ACCESS_TOKEN
+            valueFrom:
+              secretKeyRef:
+                name: ankoro-twitter-apikey
+                key: TWITTER_ACCESS_TOKEN
+          - name: TWITTER_ACCESS_TOKEN_SECRET
+            valueFrom:
+              secretKeyRef:
+                name: ankoro-twitter-apikey
+                key: TWITTER_ACCESS_TOKEN_SECRET
+      volumes:
+      - name: docker-volume
+        hostPath:
+          # directory location on host
+          path: /var/run/docker.sock
+          # this field is optional
+          type: Socket
+---
