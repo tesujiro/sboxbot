@@ -39,5 +39,5 @@ switch_local:
 	kubectl config use-context docker-for-desktop --insecure-skip-tls-verify=true
 
 switch_gcloud:
-	kubectl config use-context gke_anko-robot_asia-east1-b_ankoro-cluster
+	kubectl config use-context gke_anko-robot_asia-east1-a_ankoro-cluster 
 

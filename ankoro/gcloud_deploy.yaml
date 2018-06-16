@@ -17,12 +17,13 @@ spec:
       - name: ankoro
         image: asia.gcr.io/anko-robot/sbox 
         command: ["/sbox"]
-        args: ["-image","asia.gcr.io/anko-robot/anko","-cmd","[\"/anko\"]"]
+        args: ["-image","index.docker.io/tesujiro/anko","-cmd","[\"/anko\"]"]
+        #args: ["-image","asia.gcr.io/anko-robot/anko","-cmd","[\"/anko\"]"]
         volumeMounts:
         - mountPath: /var/run/docker.sock
           name: docker-volume
-        - mountPath: /volume
-          name: ankoro-volume
+        #- mountPath: /volume
+          #name: ankoro-volume
         env:
           - name: HASHTAG
             valueFrom:

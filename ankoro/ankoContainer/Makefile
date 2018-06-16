@@ -24,6 +24,12 @@ register_gcloud:
 	docker build -t $(GCP_TAG) .
 	gcloud docker -- push $(GCP_TAG)
 
+DOCKER_TAG=tesujiro/$(MODULE)
+register_docker:
+	docker login
+	docker tag $(DOCKER_TAG) $(MODULE)
+	docker push $(DOCKER_TAG)
+
 start:
 	docker run -t -i -d $(MODULE) 
 	#docker run --rm -t -i $(MODULE) 

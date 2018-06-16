@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"net"
+	"os"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
@@ -40,12 +42,11 @@ func newDockerContainer(ctx context.Context, image string, cmd []string) (*insta
 		c.client = *cli
 	}
 
-	/*
-		reader, err := c.client.ImagePull(ctx, "docker.io/library/alpine", types.ImagePullOptions{})
-		if err != nil {
-		}
-		io.Copy(os.Stdout, reader)
-	*/
+	reader, err := c.client.ImagePull(ctx, image, types.ImagePullOptions{})
+	if err != nil {
+		fmt.Printf("Image Pulll ERROR: %v\n", err)
+	}
+	io.Copy(os.Stdout, reader)
 
 	resp, err := c.client.ContainerCreate(ctx, &container.Config{
 		Image:        image,
