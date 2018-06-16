@@ -158,7 +158,7 @@ func (s *sbox) run(ctx context.Context) error {
 func run(ctx context.Context) error {
 
 	image := flag.String("image", "alpine", "container image")
-	cmd := flag.String("cmd", "/bin/ash", "container commands in string array ex. \"[\"/bin/bash\",]\"")
+	cmd := flag.String("cmd", "[\"/bin/ash\"]", "container commands in string array ex. \"[\"/bin/bash\",]\"")
 	flag.Parse()
 
 	s := new(*image, *cmd)
