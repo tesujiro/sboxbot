@@ -42,11 +42,32 @@ func newDockerContainer(ctx context.Context, image string, cmd []string) (*insta
 		c.client = *cli
 	}
 
-	reader, err := c.client.ImagePull(ctx, image, types.ImagePullOptions{})
-	if err != nil {
-		fmt.Printf("Image Pulll ERROR: %v\n", err)
+	// Check images in the host , if image not exists ,pull it
+	if images, err := c.client.ImageList(ctx, types.ImageListOptions{All: true}); err != nil {
+		fmt.Printf("Image List ERROR: %v\n", err)
+		return nil, err
+	} else {
+		exist := false
+	L:
+		for _, im := range images {
+			fmt.Printf("Check Image : %v\n", im.RepoTags)
+			for _, t := range im.RepoTags {
+				if t == image || t == image+":latest" {
+					exist = true
+					break L
+				}
+			}
+		}
+		if !exist {
+			fmt.Printf("Image Pulll : %v\n", image)
+			//TODO: REPOSITORY LOGIN
+			reader, err := c.client.ImagePull(ctx, image, types.ImagePullOptions{})
+			if err != nil {
+				fmt.Printf("Image Pulll ERROR: %v\n", err)
+			}
+			io.Copy(os.Stdout, reader)
+		}
 	}
-	io.Copy(os.Stdout, reader)
 
 	resp, err := c.client.ContainerCreate(ctx, &container.Config{
 		Image:        image,
